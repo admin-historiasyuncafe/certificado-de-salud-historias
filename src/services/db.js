@@ -1,3 +1,25 @@
+import { 
+  getFirestoreDb, 
+  getFirebaseStorageInstance, 
+  isFirebaseConfigured 
+} from './firebase';
+import { 
+  collection, 
+  doc, 
+  setDoc, 
+  getDoc, 
+  getDocs, 
+  deleteDoc,
+  query,
+  updateDoc
+} from 'firebase/firestore';
+import { 
+  ref, 
+  uploadBytes, 
+  getDownloadURL, 
+  deleteObject 
+} from 'firebase/storage';
+
 const DB_NAME = 'HealthCertificatesDB';
 const DB_VERSION = 1;
 
@@ -37,6 +59,34 @@ export function openDatabase() {
 
 // Get all certificates
 export async function getAllCertificates() {
+  const today = new Date().toISOString().split('T')[0];
+  const warningPeriod = parseInt(localStorage.getItem('warning_period') || '14', 10);
+
+  if (isFirebaseConfigured()) {
+    try {
+      const db = getFirestoreDb();
+      const certsCol = collection(db, 'certificates');
+      const q = query(certsCol);
+      const snapshot = await getDocs(q);
+      const certs = [];
+      
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        // Refresh dynamic status based on current date
+        const newStatus = getCertificateStatus(data.expirationDate, today, warningPeriod);
+        if (newStatus !== data.status) {
+          data.status = newStatus;
+          saveCertificateStatusInBackground(data.id, newStatus);
+        }
+        certs.push(data);
+      });
+      return certs;
+    } catch (err) {
+      console.error('Error fetching certificates from Firestore, falling back to local DB:', err);
+    }
+  }
+
+  // Local fallback
   const db = await openDatabase();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction('certificates', 'readonly');
@@ -44,20 +94,14 @@ export async function getAllCertificates() {
     const request = store.getAll();
 
     request.onsuccess = () => {
-      // Refresh dynamic status based on current date before returning
-      const today = new Date().toISOString().split('T')[0];
-      const warningPeriod = parseInt(localStorage.getItem('warning_period') || '14', 10);
-
       const updatedCerts = request.result.map(cert => {
         const newStatus = getCertificateStatus(cert.expirationDate, today, warningPeriod);
         if (newStatus !== cert.status) {
           cert.status = newStatus;
-          // We don't block on writing it back, but let's save the sync update in background
           saveCertificateStatusInBackground(cert.id, newStatus);
         }
         return cert;
       });
-
       resolve(updatedCerts);
     };
 
@@ -68,6 +112,13 @@ export async function getAllCertificates() {
 // Helper function to save updated status
 async function saveCertificateStatusInBackground(id, status) {
   try {
+    if (isFirebaseConfigured()) {
+      const db = getFirestoreDb();
+      const docRef = doc(db, 'certificates', id);
+      await updateDoc(docRef, { status });
+      return;
+    }
+
     const db = await openDatabase();
     const transaction = db.transaction('certificates', 'readwrite');
     const store = transaction.objectStore('certificates');
@@ -109,6 +160,19 @@ export function getCertificateStatus(expirationDate, today, warningPeriod) {
 
 // Get certificate by ID
 export async function getCertificateById(id) {
+  if (isFirebaseConfigured()) {
+    try {
+      const db = getFirestoreDb();
+      const docRef = doc(db, 'certificates', id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        return docSnap.data();
+      }
+    } catch (err) {
+      console.error('Error fetching certificate from Firestore:', err);
+    }
+  }
+
   const db = await openDatabase();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction('certificates', 'readonly');
@@ -122,24 +186,60 @@ export async function getCertificateById(id) {
 
 // Add or update certificate
 export async function saveCertificate(certificate) {
+  if (!certificate.id) {
+    certificate.id = 'cert_' + Math.random().toString(36).substr(2, 9);
+  }
+  
+  if (!certificate.uploadedAt) {
+    certificate.uploadedAt = new Date().toISOString();
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+  const warningPeriod = parseInt(localStorage.getItem('warning_period') || '14', 10);
+  certificate.status = getCertificateStatus(certificate.expirationDate, today, warningPeriod);
+
+  if (isFirebaseConfigured()) {
+    try {
+      const db = getFirestoreDb();
+      
+      // If there's an image file to upload
+      if (certificate.imageBlob) {
+        const storage = getFirebaseStorageInstance();
+        const storageRef = ref(storage, `certificates/${certificate.id}_${certificate.imageName || 'image.png'}`);
+        await uploadBytes(storageRef, certificate.imageBlob);
+        const downloadUrl = await getDownloadURL(storageRef);
+        certificate.imageUrl = downloadUrl;
+      }
+      
+      // Remove imageBlob from document structure before sending to Firestore
+      const firestoreData = { ...certificate };
+      delete firestoreData.imageBlob;
+
+      const docRef = doc(db, 'certificates', certificate.id);
+      await setDoc(docRef, firestoreData);
+      
+      // Also cache locally in IndexedDB as a fallback
+      try {
+        const localDb = await openDatabase();
+        const transaction = localDb.transaction('certificates', 'readwrite');
+        const store = transaction.objectStore('certificates');
+        store.put(certificate);
+      } catch (localErr) {
+        console.warn('Could not cache locally in IndexedDB:', localErr);
+      }
+
+      return certificate;
+    } catch (err) {
+      console.error('Error saving certificate in Firebase:', err);
+      throw err;
+    }
+  }
+
+  // Default IndexedDB behavior
   const db = await openDatabase();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction('certificates', 'readwrite');
     const store = transaction.objectStore('certificates');
-    
-    // Automatically set ID if not present
-    if (!certificate.id) {
-      certificate.id = 'cert_' + Math.random().toString(36).substr(2, 9);
-    }
-    
-    if (!certificate.uploadedAt) {
-      certificate.uploadedAt = new Date().toISOString();
-    }
-
-    const today = new Date().toISOString().split('T')[0];
-    const warningPeriod = parseInt(localStorage.getItem('warning_period') || '14', 10);
-    certificate.status = getCertificateStatus(certificate.expirationDate, today, warningPeriod);
-
     const request = store.put(certificate);
 
     request.onsuccess = () => resolve(certificate);
@@ -149,6 +249,69 @@ export async function saveCertificate(certificate) {
 
 // Delete certificate
 export async function deleteCertificate(id) {
+  if (isFirebaseConfigured()) {
+    try {
+      const db = getFirestoreDb();
+      const docRef = doc(db, 'certificates', id);
+      
+      // Get image details to remove from Firebase Storage if it exists
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const certData = docSnap.data();
+        if (certData.imageUrl) {
+          try {
+            const storage = getFirebaseStorageInstance();
+            const storageRef = ref(storage, `certificates/${id}_${certData.imageName || 'image.png'}`);
+            await deleteObject(storageRef);
+          } catch (storageErr) {
+            console.warn('Could not delete image from Firebase Storage:', storageErr);
+          }
+        }
+      }
+
+      // Delete from Firestore
+      await deleteDoc(docRef);
+
+      // Clean up notifications linked to this certificate in Firestore
+      const notifsCol = collection(db, 'notifications');
+      const notifsSnapshot = await getDocs(notifsCol);
+      for (const notifDoc of notifsSnapshot.docs) {
+        const notifData = notifDoc.data();
+        if (notifData.certificateId === id) {
+          await deleteDoc(doc(db, 'notifications', notifDoc.id));
+        }
+      }
+
+      // Also clean up local IndexedDB
+      try {
+        const localDb = await openDatabase();
+        const transaction = localDb.transaction(['certificates', 'notifications'], 'readwrite');
+        
+        const certStore = transaction.objectStore('certificates');
+        certStore.delete(id);
+
+        const notifStore = transaction.objectStore('notifications');
+        const index = notifStore.index('certificateId');
+        const request = index.openCursor(IDBKeyRange.only(id));
+        request.onsuccess = (event) => {
+          const cursor = event.target.result;
+          if (cursor) {
+            cursor.delete();
+            cursor.continue();
+          }
+        };
+      } catch (localErr) {
+        console.warn('Failed to clean up local IndexedDB cache:', localErr);
+      }
+
+      return true;
+    } catch (err) {
+      console.error('Error deleting from Firebase:', err);
+      throw err;
+    }
+  }
+
+  // Local fallback
   const db = await openDatabase();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(['certificates', 'notifications'], 'readwrite');
@@ -157,7 +320,7 @@ export async function deleteCertificate(id) {
     const certStore = transaction.objectStore('certificates');
     certStore.delete(id);
 
-    // Delete associated notifications in background
+    // Delete associated notifications
     const notifStore = transaction.objectStore('notifications');
     const index = notifStore.index('certificateId');
     const request = index.openCursor(IDBKeyRange.only(id));
@@ -177,6 +340,32 @@ export async function deleteCertificate(id) {
 
 // Log notifications
 export async function logNotification(notification) {
+  const notifId = 'notif_' + Math.random().toString(36).substr(2, 9);
+  const notifData = { id: notifId, ...notification };
+
+  if (isFirebaseConfigured()) {
+    try {
+      const db = getFirestoreDb();
+      const docRef = doc(db, 'notifications', notifId);
+      await setDoc(docRef, notifData);
+      
+      // Also cache locally in IndexedDB
+      try {
+        const localDb = await openDatabase();
+        const transaction = localDb.transaction('notifications', 'readwrite');
+        const store = transaction.objectStore('notifications');
+        store.put(notifData);
+      } catch (localErr) {
+        console.warn('Could not cache notification locally:', localErr);
+      }
+
+      return notifId;
+    } catch (err) {
+      console.error('Error saving notification in Firebase:', err);
+    }
+  }
+
+  // Local fallback
   const db = await openDatabase();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction('notifications', 'readwrite');
@@ -190,6 +379,23 @@ export async function logNotification(notification) {
 
 // Get notification logs
 export async function getNotificationLogs() {
+  if (isFirebaseConfigured()) {
+    try {
+      const db = getFirestoreDb();
+      const notifsCol = collection(db, 'notifications');
+      const snapshot = await getDocs(notifsCol);
+      const logs = [];
+      
+      snapshot.forEach(docSnap => {
+        logs.push(docSnap.data());
+      });
+      return logs.sort((a, b) => new Date(b.sentAt) - new Date(a.sentAt));
+    } catch (err) {
+      console.error('Error fetching notification logs from Firebase:', err);
+    }
+  }
+
+  // Local fallback
   const db = await openDatabase();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction('notifications', 'readonly');

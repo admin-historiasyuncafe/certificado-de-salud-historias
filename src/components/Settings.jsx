@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, ShieldCheck, Database, Trash2, Save } from 'lucide-react';
+import { Calendar, ShieldCheck, Database, Trash2, Save, Cloud, CloudOff, RefreshCw } from 'lucide-react';
 import { saveCertificate, logNotification, getAllCertificates, deleteCertificate } from '../services/db';
+import { isFirebaseConfigured } from '../services/firebase';
 
 export default function Settings({ onDataReset }) {
   const [validity, setValidity] = useState('1year');
@@ -9,10 +10,26 @@ export default function Settings({ onDataReset }) {
   const [statusMessage, setStatusMessage] = useState({ text: '', type: '' });
   const [isLoading, setIsLoading] = useState(false);
 
+  // Firebase Config States
+  const [firebaseConfigText, setFirebaseConfigText] = useState('');
+  const [isFirebaseConnected, setIsFirebaseConnected] = useState(false);
+
   useEffect(() => {
     setValidity(localStorage.getItem('default_validity') || '1year');
     setWarningPeriod(parseInt(localStorage.getItem('warning_period') || '14', 10));
     setRecipient(localStorage.getItem('notification_recipient') || 'hr@company.com');
+
+    // Load Firebase Config
+    const localConfig = localStorage.getItem('firebase_config');
+    if (localConfig) {
+      try {
+        const parsed = JSON.parse(localConfig);
+        setFirebaseConfigText(JSON.stringify(parsed, null, 2));
+        setIsFirebaseConnected(isFirebaseConfigured());
+      } catch (e) {
+        setFirebaseConfigText(localConfig);
+      }
+    }
   }, []);
 
   const handleSave = (e) => {
@@ -179,6 +196,43 @@ export default function Settings({ onDataReset }) {
     }
   };
 
+  const handleSaveFirebase = (e) => {
+    e.preventDefault();
+    try {
+      if (!firebaseConfigText.trim()) {
+        throw new Error('La configuración de Firebase no puede estar vacía.');
+      }
+      
+      const parsed = JSON.parse(firebaseConfigText);
+      if (!parsed.apiKey || !parsed.projectId) {
+        throw new Error('La configuración debe contener al menos "apiKey" y "projectId".');
+      }
+
+      localStorage.setItem('firebase_config', JSON.stringify(parsed));
+      setIsFirebaseConnected(true);
+      setStatusMessage({ text: '¡Configuración de Firebase guardada con éxito! Recargando para iniciar la sincronización...', type: 'success' });
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (err) {
+      console.error(err);
+      setStatusMessage({ text: 'Error en el JSON de Firebase: ' + err.message, type: 'error' });
+      setTimeout(() => setStatusMessage({ text: '', type: '' }), 5000);
+    }
+  };
+
+  const handleDisconnectFirebase = () => {
+    if (window.confirm('¿Deseas desconectar Firebase? La aplicación volverá a utilizar la base de datos local (IndexedDB).')) {
+      localStorage.removeItem('firebase_config');
+      setIsFirebaseConnected(false);
+      setFirebaseConfigText('');
+      setStatusMessage({ text: 'Firebase desconectado. Recargando...', type: 'success' });
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    }
+  };
+
   return (
     <div className="settings-container animate-fade-in">
       <div className="view-header">
@@ -249,6 +303,63 @@ export default function Settings({ onDataReset }) {
               <Save size={18} />
               Guardar Reglas del Sistema
             </button>
+          </form>
+        </section>
+
+        {/* Sincronización con Firebase */}
+        <section className="glass-card settings-card">
+          <div className="card-header-icon">
+            <Cloud className="cyan-glow-icon" size={24} />
+            <h3>Sincronización en la Nube (Firebase)</h3>
+          </div>
+          <p className="settings-description">
+            Conecta tu aplicación a un proyecto de Firebase para sincronizar tus datos (certificados y logs) en tiempo real entre múltiples dispositivos.
+          </p>
+          <form onSubmit={handleSaveFirebase}>
+            <div className="form-group">
+              <label className="form-label" htmlFor="firebase-config-input">Objeto de Configuración Firebase (JSON)</label>
+              <textarea
+                id="firebase-config-input"
+                className="form-input"
+                rows="6"
+                style={{ fontFamily: 'monospace', fontSize: '0.85rem', resize: 'vertical' }}
+                placeholder={`{\n  "apiKey": "AIzaSy...",\n  "authDomain": "...",\n  "projectId": "...",\n  "storageBucket": "...",\n  "messagingSenderId": "...",\n  "appId": "..."\n}`}
+                value={firebaseConfigText}
+                onChange={(e) => setFirebaseConfigText(e.target.value)}
+                required
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', margin: '0.5rem 0' }}>
+              <span className="form-label" style={{ margin: 0 }}>Estado:</span>
+              {isFirebaseConnected ? (
+                <span style={{ color: 'hsl(var(--status-active))', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.9rem', fontWeight: 600 }}>
+                  <Cloud size={16} /> Conectado a la Nube (Firestore)
+                </span>
+              ) : (
+                <span style={{ color: 'hsl(var(--text-muted))', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.9rem' }}>
+                  <CloudOff size={16} /> Solo almacenamiento local (IndexedDB)
+                </span>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+              <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
+                <Save size={18} />
+                Guardar y Conectar
+              </button>
+              {isFirebaseConnected && (
+                <button
+                  type="button"
+                  onClick={handleDisconnectFirebase}
+                  className="btn btn-danger"
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0 0.75rem' }}
+                  title="Desconectar Firebase"
+                >
+                  <CloudOff size={18} />
+                </button>
+              )}
+            </div>
           </form>
         </section>
 
