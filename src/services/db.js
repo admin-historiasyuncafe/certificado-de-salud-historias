@@ -1,7 +1,8 @@
 import { 
   getFirestoreDb, 
   getFirebaseStorageInstance, 
-  isFirebaseConfigured 
+  isFirebaseConfigured,
+  setFirebaseConnectionError
 } from './firebase';
 import { 
   collection, 
@@ -80,9 +81,11 @@ export async function getAllCertificates() {
         }
         certs.push(data);
       });
+      setFirebaseConnectionError(null);
       return certs;
     } catch (err) {
       console.error('Error fetching certificates from Firestore, falling back to local DB:', err);
+      setFirebaseConnectionError(err.message || String(err));
     }
   }
 

@@ -71,6 +71,16 @@ export function getFirebaseStorageInstance() {
   return storage;
 }
 
+let connectionError = null;
+
+export function setFirebaseConnectionError(err) {
+  connectionError = err;
+}
+
+export function getFirebaseConnectionError() {
+  return connectionError;
+}
+
 export function isFirebaseConfigured() {
   const config = getFirebaseConfig();
   return config && config.projectId && config.apiKey && db !== null;

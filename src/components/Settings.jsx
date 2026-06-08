@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, ShieldCheck, Database, Trash2, Save, Cloud, CloudOff, RefreshCw } from 'lucide-react';
 import { saveCertificate, logNotification, getAllCertificates, deleteCertificate } from '../services/db';
-import { isFirebaseConfigured } from '../services/firebase';
+import { isFirebaseConfigured, getFirebaseConnectionError } from '../services/firebase';
 
 export default function Settings({ onDataReset }) {
   const [validity, setValidity] = useState('1year');
@@ -13,6 +13,7 @@ export default function Settings({ onDataReset }) {
   // Firebase Config States
   const [firebaseConfigText, setFirebaseConfigText] = useState('');
   const [isFirebaseConnected, setIsFirebaseConnected] = useState(false);
+  const [firebaseError, setFirebaseError] = useState(null);
 
   useEffect(() => {
     setValidity(localStorage.getItem('default_validity') || '1year');
@@ -46,6 +47,7 @@ export default function Settings({ onDataReset }) {
       }
     }
     setIsFirebaseConnected(isFirebaseConfigured());
+    setFirebaseError(getFirebaseConnectionError());
   }, []);
 
   const handleSave = (e) => {
@@ -358,6 +360,24 @@ export default function Settings({ onDataReset }) {
                 </span>
               )}
             </div>
+
+            {firebaseError && (
+              <div style={{
+                marginTop: '0.75rem',
+                padding: '0.75rem',
+                backgroundColor: 'hsl(var(--status-expired) / 0.15)',
+                border: '1px solid hsl(var(--status-expired) / 0.3)',
+                borderRadius: '8px',
+                color: 'hsl(var(--status-expired))',
+                fontSize: '0.85rem',
+                lineHeight: '1.4'
+              }}>
+                <strong>⚠️ Error de Conexión:</strong> {firebaseError}
+                <div style={{ marginTop: '0.5rem', color: 'hsl(var(--text-secondary))', fontSize: '0.8rem' }}>
+                  Asegúrate de haber activado <strong>Cloud Firestore</strong> y <strong>Storage</strong> en la Consola de Firebase y configurado sus <strong>Reglas de Seguridad</strong> para permitir lectura/escritura pública en pruebas (ej: <code>allow read, write: if true;</code>).
+                </div>
+              </div>
+            )}
 
             <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
               <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
