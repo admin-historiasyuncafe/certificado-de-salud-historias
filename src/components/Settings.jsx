@@ -25,11 +25,27 @@ export default function Settings({ onDataReset }) {
       try {
         const parsed = JSON.parse(localConfig);
         setFirebaseConfigText(JSON.stringify(parsed, null, 2));
-        setIsFirebaseConnected(isFirebaseConfigured());
       } catch (e) {
         setFirebaseConfigText(localConfig);
       }
+    } else {
+      // Cargar la configuración por defecto si está activa en el sistema
+      const hasFirebase = isFirebaseConfigured();
+      if (hasFirebase) {
+        // Obtenemos la config por defecto directamente
+        const localCreds = {
+          apiKey: "AIzaSyARgNWxgx6l5OWRzKRam-xrbOh94XXrlMM",
+          authDomain: "docuhistorias-db.firebaseapp.com",
+          projectId: "docuhistorias-db",
+          storageBucket: "docuhistorias-db.firebasestorage.app",
+          messagingSenderId: "512184671483",
+          appId: "1:512184671483:web:5352e8eddfdf97124d645e",
+          measurementId: "G-8JM1DQ26ZS"
+        };
+        setFirebaseConfigText(JSON.stringify(localCreds, null, 2));
+      }
     }
+    setIsFirebaseConnected(isFirebaseConfigured());
   }, []);
 
   const handleSave = (e) => {

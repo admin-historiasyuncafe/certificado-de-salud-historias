@@ -15,7 +15,16 @@ export function getFirebaseConfig() {
       console.error('Error al decodificar la configuración de Firebase en localStorage:', e);
     }
   }
-  return null;
+  // Configuración predeterminada proporcionada por el usuario
+  return {
+    apiKey: "AIzaSyARgNWxgx6l5OWRzKRam-xrbOh94XXrlMM",
+    authDomain: "docuhistorias-db.firebaseapp.com",
+    projectId: "docuhistorias-db",
+    storageBucket: "docuhistorias-db.firebasestorage.app",
+    messagingSenderId: "512184671483",
+    appId: "1:512184671483:web:5352e8eddfdf97124d645e",
+    measurementId: "G-8JM1DQ26ZS"
+  };
 }
 
 export function initFirebase() {
