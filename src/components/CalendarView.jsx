@@ -307,23 +307,25 @@ export default function CalendarView({ refreshTrigger, onRecordDeleted }) {
               </button>
             </div>
 
-            <div className="modal-body-grid">
-              <div className="modal-document-viewer">
-                {selectedCert.imageType === 'application/pdf' ? (
-                  <div className="pdf-viewer-placeholder">
-                    <FileText size={100} className="pdf-modal-icon" />
-                    <h4>Documento PDF</h4>
-                    <p>{selectedCert.imageName}</p>
-                    <a href={certImageUrl} download={selectedCert.imageName} className="btn btn-secondary mt-4">
-                      Descargar PDF
-                    </a>
-                  </div>
-                ) : certImageUrl ? (
-                  <img src={certImageUrl} alt="Escaneo del Certificado" className="modal-image-display" />
-                ) : (
-                  <div className="no-image-placeholder">No se adjuntó ningún archivo de documento.</div>
-                )}
-              </div>
+            <div className={`modal-body-grid ${isEditing ? 'editing-mode' : ''}`}>
+              {!isEditing && (
+                <div className="modal-document-viewer">
+                  {selectedCert.imageType === 'application/pdf' ? (
+                    <div className="pdf-viewer-placeholder">
+                      <FileText size={100} className="pdf-modal-icon" />
+                      <h4>Documento PDF</h4>
+                      <p>{selectedCert.imageName}</p>
+                      <a href={certImageUrl} download={selectedCert.imageName} className="btn btn-secondary mt-4">
+                        Descargar PDF
+                      </a>
+                    </div>
+                  ) : certImageUrl ? (
+                    <img src={certImageUrl} alt="Escaneo del Certificado" className="modal-image-display" />
+                  ) : (
+                    <div className="no-image-placeholder">No se adjuntó ningún archivo de documento.</div>
+                  )}
+                </div>
+              )}
               <div className="modal-metadata-section">
                 {isEditing ? (
                   <form onSubmit={saveEdit} className="meta-card form-panel" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', border: 'none', background: 'transparent', padding: 0 }}>
@@ -598,6 +600,15 @@ export default function CalendarView({ refreshTrigger, onRecordDeleted }) {
 
         .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
         .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+
+        .modal-body-grid.editing-mode {
+          grid-template-columns: 1fr;
+          max-width: 500px;
+          margin: 0 auto;
+          width: 100%;
+          height: auto;
+          max-height: calc(100vh - 200px);
+        }
 
         @media (max-width: 768px) {
           .flex-header {

@@ -402,23 +402,25 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
               </button>
             </div>
 
-            <div className="modal-body-grid">
-              <div className="modal-document-viewer">
-                {selectedCert.imageType === 'application/pdf' ? (
-                  <div className="pdf-viewer-placeholder">
-                    <FileText size={100} className="pdf-modal-icon" />
-                    <h4>Documento PDF</h4>
-                    <p>{selectedCert.imageName}</p>
-                    <a href={certImageUrl} download={selectedCert.imageName} className="btn btn-secondary mt-4">
-                      Descargar PDF
-                    </a>
-                  </div>
-                ) : certImageUrl ? (
-                  <img src={certImageUrl} alt="Escaneo de Certificado" className="modal-image-display" />
-                ) : (
-                  <div className="no-image-placeholder">No se adjuntó ningún archivo de documento.</div>
-                )}
-              </div>
+            <div className={`modal-body-grid ${isEditing ? 'editing-mode' : ''}`}>
+              {!isEditing && (
+                <div className="modal-document-viewer">
+                  {selectedCert.imageType === 'application/pdf' ? (
+                    <div className="pdf-viewer-placeholder">
+                      <FileText size={100} className="pdf-modal-icon" />
+                      <h4>Documento PDF</h4>
+                      <p>{selectedCert.imageName}</p>
+                      <a href={certImageUrl} download={selectedCert.imageName} className="btn btn-secondary mt-4">
+                        Descargar PDF
+                      </a>
+                    </div>
+                  ) : certImageUrl ? (
+                    <img src={certImageUrl} alt="Escaneo de Certificado" className="modal-image-display" />
+                  ) : (
+                    <div className="no-image-placeholder">No se adjuntó ningún archivo de documento.</div>
+                  )}
+                </div>
+              )}
 
               <div className="modal-metadata-section">
                 {isEditing ? (
@@ -872,6 +874,15 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
         .recent-log-date {
           color: hsl(var(--text-muted));
           text-align: right;
+        }
+
+        .modal-body-grid.editing-mode {
+          grid-template-columns: 1fr;
+          max-width: 500px;
+          margin: 0 auto;
+          width: 100%;
+          height: auto;
+          max-height: calc(100vh - 200px);
         }
 
         @media (max-width: 900px) {

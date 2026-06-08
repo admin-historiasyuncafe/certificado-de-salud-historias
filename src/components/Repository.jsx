@@ -313,24 +313,26 @@ export default function Repository({ refreshTrigger, onRecordDeleted }) {
               </button>
             </div>
 
-            <div className="modal-body-grid">
+            <div className={`modal-body-grid ${isEditing ? 'editing-mode' : ''}`}>
               {/* Left Column: Image Display */}
-              <div className="modal-document-viewer">
-                {selectedCert.imageType === 'application/pdf' ? (
-                  <div className="pdf-viewer-placeholder">
-                    <FileText size={100} className="pdf-modal-icon" />
-                    <h4>Documento PDF</h4>
-                    <p>{selectedCert.imageName}</p>
-                    <a href={certImageUrl} download={selectedCert.imageName} className="btn btn-secondary mt-4">
-                      Descargar PDF
-                    </a>
-                  </div>
-                ) : certImageUrl ? (
-                  <img src={certImageUrl} alt="Escaneo del documento del certificado" className="modal-image-display" />
-                ) : (
-                  <div className="no-image-placeholder">No se adjuntó ningún archivo de documento.</div>
-                )}
-              </div>
+              {!isEditing && (
+                <div className="modal-document-viewer">
+                  {selectedCert.imageType === 'application/pdf' ? (
+                    <div className="pdf-viewer-placeholder">
+                      <FileText size={100} className="pdf-modal-icon" />
+                      <h4>Documento PDF</h4>
+                      <p>{selectedCert.imageName}</p>
+                      <a href={certImageUrl} download={selectedCert.imageName} className="btn btn-secondary mt-4">
+                        Descargar PDF
+                      </a>
+                    </div>
+                  ) : certImageUrl ? (
+                    <img src={certImageUrl} alt="Escaneo del documento del certificado" className="modal-image-display" />
+                  ) : (
+                    <div className="no-image-placeholder">No se adjuntó ningún archivo de documento.</div>
+                  )}
+                </div>
+              )}
 
               {/* Right Column: Metadata details & Log logs */}
               <div className="modal-metadata-section">
@@ -713,184 +715,6 @@ export default function Repository({ refreshTrigger, onRecordDeleted }) {
           background: hsl(var(--status-expired) / 0.1);
         }
 
-        /* Native Dialog Styling */
-        .cert-dialog-modal {
-          margin: auto;
-          max-width: 850px;
-          width: 90%;
-          border: 1px solid hsl(var(--card-border));
-          border-radius: 16px;
-          padding: 0;
-          color: #fff;
-          overflow: hidden;
-          background-color: hsl(var(--bg-secondary));
-        }
-
-        .cert-dialog-modal::backdrop {
-          background-color: rgba(2, 4, 12, 0.85);
-          backdrop-filter: blur(8px);
-        }
-
-        .modal-content-wrapper {
-          display: flex;
-          flex-direction: column;
-        }
-
-        .modal-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 1.5rem;
-          border-bottom: 1px solid hsl(var(--card-border));
-        }
-
-        .modal-subtitle {
-          font-size: 0.85rem;
-          color: hsl(var(--text-muted));
-          margin-top: 0.2rem;
-        }
-
-        .close-modal-btn {
-          background: transparent;
-          border: none;
-          color: hsl(var(--text-secondary));
-          cursor: pointer;
-        }
-        .close-modal-btn:hover {
-          color: #fff;
-        }
-
-        .modal-body-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          height: calc(100vh - 250px);
-          max-height: 500px;
-        }
-
-        .modal-document-viewer {
-          background-color: hsl(var(--bg-primary));
-          border-right: 1px solid hsl(var(--card-border));
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 1.5rem;
-          overflow: hidden;
-        }
-
-        .modal-image-display {
-          max-width: 100%;
-          max-height: 100%;
-          object-fit: contain;
-          border-radius: 6px;
-        }
-
-        .pdf-viewer-placeholder, .no-image-placeholder {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 1rem;
-          color: hsl(var(--text-secondary));
-          text-align: center;
-        }
-        .pdf-modal-icon {
-          color: #ff3333;
-        }
-
-        .modal-metadata-section {
-          padding: 1.5rem;
-          overflow-y: auto;
-          display: flex;
-          flex-direction: column;
-          gap: 1.25rem;
-        }
-
-        .meta-card {
-          background: hsl(var(--bg-tertiary) / 0.5);
-          border: 1px solid hsl(var(--card-border));
-          border-radius: 12px;
-          padding: 1.25rem;
-        }
-
-        .meta-card h3 {
-          font-size: 1.05rem;
-          margin-bottom: 1rem;
-          color: hsl(var(--accent-cyan));
-          border-bottom: 1px solid hsl(var(--card-border));
-          padding-bottom: 0.5rem;
-        }
-
-        .meta-detail-row {
-          display: flex;
-          justify-content: space-between;
-          margin-bottom: 0.75rem;
-          font-size: 0.9rem;
-        }
-
-        .meta-label {
-          color: hsl(var(--text-secondary));
-        }
-
-        .meta-value {
-          font-weight: 600;
-        }
-
-        .meta-actions {
-          display: flex;
-          gap: 0.75rem;
-          margin-top: 1.25rem;
-        }
-
-        .meta-actions .btn {
-          flex: 1;
-        }
-
-        .no-alerts-text {
-          font-size: 0.85rem;
-          color: hsl(var(--text-muted));
-          text-align: center;
-          padding: 1rem 0;
-        }
-
-        .alert-list-trail {
-          list-style: none;
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-        }
-
-        .alert-trail-item {
-          border-left: 2px solid hsl(var(--accent-cyan));
-          padding-left: 0.75rem;
-          font-size: 0.8rem;
-        }
-
-        .alert-item-header {
-          display: flex;
-          justify-content: space-between;
-          font-weight: 600;
-          margin-bottom: 0.15rem;
-        }
-
-        .alert-type {
-          display: flex;
-          align-items: center;
-          gap: 0.25rem;
-          color: hsl(var(--text-primary));
-        }
-        
-        .alert-mail-icon {
-          color: hsl(var(--accent-cyan-dim));
-        }
-
-        .alert-timestamp {
-          color: hsl(var(--text-muted));
-        }
-
-        .alert-details-desc {
-          color: hsl(var(--text-secondary));
-        }
-
         .green-text {
           color: hsl(var(--status-active));
           font-weight: 600;
@@ -907,17 +731,6 @@ export default function Repository({ refreshTrigger, onRecordDeleted }) {
           }
           .filter-box {
             width: 100%;
-          }
-          .modal-body-grid {
-            grid-template-columns: 1fr;
-            height: auto;
-            max-height: none;
-            overflow-y: visible;
-          }
-          .modal-document-viewer {
-            height: 250px;
-            border-right: none;
-            border-bottom: 1px solid hsl(var(--card-border));
           }
         }
       `}</style>
