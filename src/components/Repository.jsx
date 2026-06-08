@@ -300,7 +300,7 @@ export default function Repository({ refreshTrigger, onRecordDeleted }) {
       )}
 
       {/* Details Dialog (Native Overlay Modal) */}
-      <dialog ref={dialogRef} className="cert-dialog-modal glass-card" onClose={closeDetails}>
+      <dialog ref={dialogRef} className="cert-dialog-modal" onClose={closeDetails}>
         {selectedCert && (
           <div className="modal-content-wrapper">
             <div className="modal-header">

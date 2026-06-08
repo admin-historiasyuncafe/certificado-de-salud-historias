@@ -265,7 +265,11 @@ h1, h2, h3, h4 {
 
 /* Global Dialog & Modal Styles */
 .cert-dialog-modal {
-  margin: auto;
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
   max-width: 850px;
   width: 90%;
   border: 1px solid hsl(var(--card-border));
@@ -273,9 +277,11 @@ h1, h2, h3, h4 {
   padding: 0;
   color: #fff;
   overflow: hidden;
-  background-color: hsl(var(--bg-secondary));
-  position: relative;
+  background-color: hsl(var(--bg-secondary) / 0.9) !important;
+  backdrop-filter: var(--glass-blur) !important;
+  -webkit-backdrop-filter: var(--glass-blur) !important;
   box-shadow: var(--shadow-glow);
+  z-index: 1000;
 }
 
 .cert-dialog-modal::backdrop {
