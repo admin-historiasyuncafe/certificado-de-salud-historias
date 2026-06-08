@@ -1,0 +1,24 @@
+{
+  "short_name": "DocuHistorias",
+  "name": "DocuHistorias - Gestión de Certificados de Salud",
+  "description": "Sistema inteligente y local para el control de certificados de salud y cumplimiento normativo.",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "start_url": "/certificado-de-salud-historias/",
+  "background_color": "#1E2229",
+  "theme_color": "#068388",
+  "display": "standalone",
+  "orientation": "portrait"
+}

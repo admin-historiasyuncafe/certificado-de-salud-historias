@@ -13,7 +13,7 @@ import {
   X,
   FileText
 } from 'lucide-react';
-import { getAllCertificates, deleteCertificate, getNotificationLogs } from '../services/db';
+import { getAllCertificates, deleteCertificate, getNotificationLogs, saveCertificate } from '../services/db';
 import { downloadICSFile } from '../utils/calendar';
 
 export default function Dashboard({ refreshTrigger, onViewChange }) {
@@ -31,11 +31,33 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
   const [certImageUrl, setCertImageUrl] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
+  // Edit form state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editDept, setEditDept] = useState('');
+  const [editIssueDate, setEditIssueDate] = useState('');
+  const [editRule, setEditRule] = useState('1year');
+  const [editExpirationDate, setEditExpirationDate] = useState('');
+  const [editNotes, setEditNotes] = useState('');
+
   const dialogRef = useRef(null);
 
   useEffect(() => {
     loadDashboardData();
   }, [refreshTrigger]);
+
+  // Auto-calculate expiration in edit mode
+  useEffect(() => {
+    if (!editIssueDate || editRule === 'none' || editRule === 'custom') {
+      if (editRule === 'none') setEditExpirationDate('');
+      return;
+    }
+    const date = new Date(editIssueDate);
+    if (isNaN(date.getTime())) return;
+    if (editRule === '1year')  date.setFullYear(date.getFullYear() + 1);
+    if (editRule === '2years') date.setFullYear(date.getFullYear() + 2);
+    setEditExpirationDate(date.toISOString().split('T')[0]);
+  }, [editIssueDate, editRule]);
 
   const loadDashboardData = async () => {
     setIsLoading(true);
@@ -107,9 +129,49 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
       dialogRef.current.close();
     }
     setSelectedCert(null);
+    setIsEditing(false);
     if (certImageUrl) {
       URL.revokeObjectURL(certImageUrl);
       setCertImageUrl('');
+    }
+  };
+
+  const startEditing = () => {
+    if (!selectedCert) return;
+    setEditName(selectedCert.employeeName || '');
+    setEditDept(selectedCert.department || '');
+    setEditIssueDate(selectedCert.issueDate || '');
+    setEditRule(selectedCert.businessRule || '1year');
+    setEditExpirationDate(selectedCert.expirationDate || '');
+    setEditNotes(selectedCert.notes || '');
+    setIsEditing(true);
+  };
+
+  const saveEdit = async (e) => {
+    e.preventDefault();
+    if (!editName.trim()) return alert('El nombre del empleado es obligatorio.');
+    if (!editIssueDate) return alert('La fecha de emisión es obligatoria.');
+    if (editRule === 'custom' && !editExpirationDate) {
+      return alert('Por favor, ingrese la fecha de vencimiento.');
+    }
+
+    try {
+      const updatedCert = {
+        ...selectedCert,
+        employeeName: editName.trim(),
+        department: editDept.trim(),
+        issueDate: editIssueDate,
+        businessRule: editRule,
+        expirationDate: editRule === 'none' ? '' : editExpirationDate,
+        notes: editNotes.trim(),
+      };
+
+      const saved = await saveCertificate(updatedCert);
+      setSelectedCert(saved);
+      setIsEditing(false);
+      loadDashboardData();
+    } catch (err) {
+      alert('Error al guardar los cambios: ' + err.message);
     }
   };
 
@@ -359,39 +421,124 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
               </div>
 
               <div className="modal-metadata-section">
-                <div className="meta-card">
-                  <h3>Resumen de Cumplimiento</h3>
-                  
-                  <div className="meta-detail-row">
-                    <span className="meta-label">Estado</span>
-                    <span className={`badge badge-${selectedCert.status}`}>
-                      {selectedCert.status === 'active' ? 'Activo' : selectedCert.status === 'expiring' ? 'Vence Pronto' : 'Vencido'}
-                    </span>
-                  </div>
+                {isEditing ? (
+                  <form onSubmit={saveEdit} className="meta-card form-panel" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', border: 'none', background: 'transparent', padding: 0 }}>
+                    <h3>Editar Información</h3>
+                    
+                    <div className="form-group">
+                      <label className="form-label">Nombre del Empleado *</label>
+                      <input 
+                        type="text" 
+                        className="form-input" 
+                        value={editName} 
+                        onChange={e => setEditName(e.target.value)} 
+                        required 
+                      />
+                    </div>
 
-                  <div className="meta-detail-row">
-                    <span className="meta-label">Fecha de Emisión</span>
-                    <span className="meta-value">{selectedCert.issueDate}</span>
-                  </div>
+                    <div className="form-group">
+                      <label className="form-label">Departamento</label>
+                      <input 
+                        type="text" 
+                        className="form-input" 
+                        value={editDept} 
+                        onChange={e => setEditDept(e.target.value)} 
+                      />
+                    </div>
 
-                  <div className="meta-detail-row">
-                    <span className="meta-label">Fecha de Vencimiento</span>
-                    <span className="meta-value">
-                      {selectedCert.expirationDate ? selectedCert.expirationDate : 'Indefinido (Sin Vencimiento)'}
-                    </span>
-                  </div>
+                    <div className="form-group">
+                      <label className="form-label">Fecha de Emisión *</label>
+                      <input 
+                        type="date" 
+                        className="form-input" 
+                        value={editIssueDate} 
+                        onChange={e => setEditIssueDate(e.target.value)} 
+                        required 
+                      />
+                    </div>
 
-                  <div className="meta-actions">
-                    {selectedCert.expirationDate && (
-                      <button className="btn btn-primary" onClick={() => downloadICSFile(selectedCert)}>
-                        <Download size={16} /> Exportar Recordatorio (.ics)
-                      </button>
+                    <div className="form-group">
+                      <label className="form-label">Periodo de Validez *</label>
+                      <select 
+                        className="form-input" 
+                        value={editRule} 
+                        onChange={e => setEditRule(e.target.value)}
+                      >
+                        <option value="1year">1 Año desde la Fecha de Emisión</option>
+                        <option value="2years">2 Años desde la Fecha de Emisión</option>
+                        <option value="custom">Ingresar fecha de vencimiento exacta</option>
+                        <option value="none">Sin vencimiento</option>
+                      </select>
+                    </div>
+
+                    {editRule === 'custom' && (
+                      <div className="form-group">
+                        <label className="form-label">Fecha de Vencimiento *</label>
+                        <input 
+                          type="date" 
+                          className="form-input" 
+                          value={editExpirationDate} 
+                          onChange={e => setEditExpirationDate(e.target.value)} 
+                          required 
+                        />
+                      </div>
                     )}
-                    <button className="btn btn-danger" onClick={() => handleDelete(selectedCert.id)}>
-                      <Trash2 size={16} /> Eliminar Registro
-                    </button>
+
+                    <div className="form-group">
+                      <label className="form-label">Notas</label>
+                      <textarea 
+                        className="form-input" 
+                        value={editNotes} 
+                        onChange={e => setEditNotes(e.target.value)} 
+                        rows={2} 
+                      />
+                    </div>
+
+                    <div className="meta-actions">
+                      <button type="submit" className="btn btn-primary">Guardar</button>
+                      <button type="button" className="btn btn-secondary" onClick={() => setIsEditing(false)}>Cancelar</button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="meta-card">
+                    <h3>Resumen de Cumplimiento</h3>
+                    
+                    <div className="meta-detail-row">
+                      <span className="meta-label">Estado</span>
+                      <span className={`badge badge-${selectedCert.status}`}>
+                        {selectedCert.status === 'active' ? 'Activo' : selectedCert.status === 'expiring' ? 'Vence Pronto' : 'Vencido'}
+                      </span>
+                    </div>
+
+                    <div className="meta-detail-row">
+                      <span className="meta-label">Fecha de Emisión</span>
+                      <span className="meta-value">{selectedCert.issueDate}</span>
+                    </div>
+
+                    <div className="meta-detail-row">
+                      <span className="meta-label">Fecha de Vencimiento</span>
+                      <span className="meta-value">
+                        {selectedCert.expirationDate ? selectedCert.expirationDate : 'Indefinido (Sin Vencimiento)'}
+                      </span>
+                    </div>
+
+                    <div className="meta-actions" style={{ flexDirection: 'column', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
+                        <button className="btn btn-secondary" style={{ flex: 1 }} onClick={startEditing}>
+                          Editar
+                        </button>
+                        {selectedCert.expirationDate && (
+                          <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => downloadICSFile(selectedCert)}>
+                            <Download size={16} /> Exportar (.ics)
+                          </button>
+                        )}
+                      </div>
+                      <button className="btn btn-danger" style={{ width: '100%' }} onClick={() => handleDelete(selectedCert.id)}>
+                        <Trash2 size={16} /> Eliminar Registro
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>

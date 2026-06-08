@@ -36,9 +36,9 @@ export default function Sidebar({ currentView, onViewChange }) {
     <>
       {/* Mobile Top Navigation Header */}
       <header className="mobile-header">
-        <div className="logo-container">
+        <div className="logo-container animate-fade-in" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <Coffee className="logo-icon animate-pulse" />
-          <span className="logo-text" style={{ textTransform: 'lowercase' }}>historias y un café</span>
+          <span className="logo-text">DocuHistorias</span>
         </div>
         <button className="mobile-toggle" onClick={toggleMobileMenu} aria-label="Toggle Menu">
           {isOpen ? <X size={24} /> : <Menu size={24} />}
@@ -49,7 +49,7 @@ export default function Sidebar({ currentView, onViewChange }) {
       <aside className={`sidebar ${isOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-brand">
           <Coffee className="logo-icon" />
-          <h1 className="logo-text" style={{ textTransform: 'lowercase' }}>historias y un café</h1>
+          <h1 className="logo-text">DocuHistorias</h1>
         </div>
 
         <nav className="sidebar-nav">
