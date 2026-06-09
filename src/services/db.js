@@ -1,6 +1,5 @@
 import { 
   getFirestoreDb, 
-  getFirebaseStorageInstance, 
   isFirebaseConfigured,
   setFirebaseConnectionError
 } from './firebase';
@@ -14,12 +13,43 @@ import {
   query,
   updateDoc
 } from 'firebase/firestore';
-import { 
-  ref, 
-  uploadBytes, 
-  getDownloadURL, 
-  deleteObject 
-} from 'firebase/storage';
+
+// ── Image helpers: compress + convert Blob <-> base64 for Firestore storage ──
+async function blobToBase64(blob) {
+  // Compress image using canvas before encoding to keep under Firestore 1MB limit
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(blob);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      // Downscale if larger than 1200px wide
+      const maxW = 1200;
+      let { width, height } = img;
+      if (width > maxW) {
+        height = Math.round((height * maxW) / width);
+        width = maxW;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      // Encode as JPEG at 80% quality
+      const base64 = canvas.toDataURL('image/jpeg', 0.8);
+      resolve(base64); // full data URL e.g. "data:image/jpeg;base64,..."
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image load failed')); };
+    img.src = url;
+  });
+}
+
+function base64ToBlob(base64DataUrl) {
+  const [header, data] = base64DataUrl.split(',');
+  const mime = header.match(/:(.*?);/)[1];
+  const binary = atob(data);
+  const arr = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
+  return new Blob([arr], { type: mime });
+}
 
 const DB_NAME = 'HealthCertificatesDB';
 const DB_VERSION = 1;
@@ -98,18 +128,19 @@ export async function getAllCertificates() {
           saveCertificateStatusInBackground(data.id, newStatus);
         }
 
-        // Merge local data (especially imageBlob) into the Firestore data
-        const localCert = localCertsMap.get(data.id);
-        console.log(`getAllCertificates merging diagnostic for ${data.id} (${data.employeeName}):`, {
-          hasLocalCert: !!localCert,
-          localHasBlob: localCert ? !!localCert.imageBlob : false,
-          localBlobSize: localCert?.imageBlob ? (localCert.imageBlob instanceof ArrayBuffer ? localCert.imageBlob.byteLength : localCert.imageBlob.size) : 0,
-          dataHasBlob: !!data.imageBlob,
-          dataHasImageUrl: !!data.imageUrl
-        });
+        // Reconstruct imageBlob from Firestore base64 if available
+        if (data.imageBase64 && !data.imageBlob) {
+          try {
+            data.imageBlob = base64ToBlob(data.imageBase64);
+          } catch (e) {
+            console.warn('Could not convert imageBase64 to Blob:', e);
+          }
+        }
 
-        if (localCert) {
-          if (localCert.imageBlob && !data.imageBlob) {
+        // Fallback: merge imageBlob from local IndexedDB if Firestore has none
+        const localCert = localCertsMap.get(data.id);
+        if (!data.imageBlob && localCert) {
+          if (localCert.imageBlob) {
             let blob = localCert.imageBlob;
             if (localCert.imageBlob instanceof ArrayBuffer) {
               blob = new Blob([localCert.imageBlob], { type: localCert.imageType || 'image/png' });
@@ -210,7 +241,12 @@ export async function getCertificateById(id) {
             request.onsuccess = () => resolve(request.result);
             request.onerror = () => reject(request.error);
           });
-          if (localData && localData.imageBlob) {
+          // First try Firestore base64
+          if (data.imageBase64 && !data.imageBlob) {
+            try { data.imageBlob = base64ToBlob(data.imageBase64); } catch(e) {}
+          }
+          // Fallback to local IndexedDB
+          if (!data.imageBlob && localData && localData.imageBlob) {
             let blob = localData.imageBlob;
             if (localData.imageBlob instanceof ArrayBuffer) {
               blob = new Blob([localData.imageBlob], { type: localData.imageType || 'image/png' });
@@ -321,56 +357,28 @@ export async function saveCertificate(certificate) {
     try {
       const firestoreDb = getFirestoreDb();
       
-      // ── STEP 2: Try uploading image to Firebase Storage (with 8s timeout) ──
+      // ── STEP 2: Convert imageBlob to base64 and store in Firestore directly ──
       if (certificate.imageBlob) {
         try {
-          const storage = getFirebaseStorageInstance();
-          const storageRef = ref(storage, `certificates/${certificate.id}_${certificate.imageName || 'image.png'}`);
-          await withTimeout(
-            uploadBytes(storageRef, certificate.imageBlob),
-            8000,
-            'El tiempo de subida de la imagen expiró. Se guardará el registro sin imagen en la nube.'
-          );
-          const downloadUrl = await withTimeout(
-            getDownloadURL(storageRef),
-            5000,
-            'No se pudo obtener la URL de la imagen.'
-          );
-          certificate.imageUrl = downloadUrl;
-
-          // Write updated certificate (with imageUrl) back to IndexedDB
-          try {
-            const localDb = await openDatabase();
-            const transaction = localDb.transaction('certificates', 'readwrite');
-            const store = transaction.objectStore('certificates');
-            const localCertificateUpdate = { ...certificate };
-            if (certificate.imageBlob instanceof Blob) {
-              localCertificateUpdate.imageBlob = await certificate.imageBlob.arrayBuffer();
-            }
-            store.put(localCertificateUpdate);
-          } catch (localErr) {
-            console.warn('Could not update local IndexedDB with imageUrl:', localErr);
+          let blobToEncode = certificate.imageBlob;
+          if (blobToEncode instanceof ArrayBuffer) {
+            blobToEncode = new Blob([blobToEncode], { type: certificate.imageType || 'image/png' });
           }
-        } catch (storageErr) {
-          // Storage failed or timed out — log and continue without remote image
-          console.warn('Storage skipped:', storageErr.message);
-          // If we already have a remote imageUrl (e.g. from previous upload), keep it!
-          // Only reset to null if we don't have one.
-          if (!certificate.imageUrl) {
-            certificate.imageUrl = null;
-          }
+          certificate.imageBase64 = await blobToBase64(blobToEncode);
+          console.log('saveCertificate: imageBase64 encoded, length:', certificate.imageBase64.length);
+        } catch (encodeErr) {
+          console.warn('Could not encode image to base64:', encodeErr.message);
         }
       }
       
-      // ── STEP 3: Save metadata to Firestore (imageBlob excluded) ──────────
+      // ── STEP 3: Save metadata + imageBase64 to Firestore (imageBlob excluded) ──
       const firestoreData = { ...certificate };
       delete firestoreData.imageBlob; // Firestore cannot store binary blobs
-      console.log("saveCertificate: saving metadata to Firestore:", JSON.stringify(firestoreData, null, 2));
 
       const docRef = doc(firestoreDb, 'certificates', certificate.id);
       await withTimeout(
         setDoc(docRef, firestoreData),
-        10000,
+        15000,
         'No se pudo conectar con la base de datos en la nube (timeout).'
       );
 
@@ -378,9 +386,7 @@ export async function saveCertificate(certificate) {
     } catch (err) {
       const msg = err?.message || err?.code || String(err) || 'Error desconocido de Firebase';
       console.error('Error saving certificate in Firebase:', msg, err);
-      // Even if Firestore failed, the record IS saved locally — don't block the user
       console.info('Certificate was saved locally. Cloud sync failed:', msg);
-      // Re-throw so the UI can show the specific error
       throw new Error(msg);
     }
   }
@@ -427,26 +433,7 @@ export async function deleteCertificate(id) {
       const firestoreDb = getFirestoreDb();
       const docRef = doc(firestoreDb, 'certificates', id);
 
-      // Try to get the doc to find its image URL (8s timeout)
-      try {
-        const docSnap = await withTimeout(getDoc(docRef), 8000, 'getDoc timeout');
-        if (docSnap.exists()) {
-          const certData = docSnap.data();
-          if (certData.imageUrl) {
-            try {
-              const storage = getFirebaseStorageInstance();
-              const storageRef = ref(storage, `certificates/${id}_${certData.imageName || 'image.png'}`);
-              await withTimeout(deleteObject(storageRef), 8000, 'Storage delete timeout');
-            } catch (storageErr) {
-              console.warn('Storage delete skipped:', storageErr.message);
-            }
-          }
-        }
-      } catch (getErr) {
-        console.warn('Could not fetch doc before delete (skipping Storage cleanup):', getErr.message);
-      }
-
-      // Delete from Firestore
+      // Delete from Firestore (imageBase64 is stored inline — no Storage cleanup needed)
       await withTimeout(deleteDoc(docRef), 8000, 'Firestore delete timeout');
 
       // Clean notifications from Firestore (best-effort)
@@ -462,7 +449,6 @@ export async function deleteCertificate(id) {
         console.warn('Could not delete notifications from Firestore:', notifErr.message);
       }
     } catch (err) {
-      // Firestore failed (permission, timeout, network) — local delete already done
       console.warn('Firestore delete failed (local delete succeeded):', err.message);
     }
   }
