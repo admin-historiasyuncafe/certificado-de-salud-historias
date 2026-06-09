@@ -301,7 +301,7 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
             {/* Urgent Renewal Queue */}
             <div className="glass-card action-panel">
               <div className="panel-header">
-                <h3>Cola de Renovación Urgente</h3>
+                <h3>Lista de Renovación Urgente</h3>
                 <button onClick={() => onViewChange('repository')} className="view-all-link">
                   Ver Repositorio <ArrowUpRight size={16} />
                 </button>

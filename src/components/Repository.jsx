@@ -99,14 +99,19 @@ export default function Repository({ refreshTrigger, onRecordDeleted }) {
 
   const openDetails = (cert) => {
     setSelectedCert(cert);
+    // Revoke any previous object URL to avoid memory leaks
+    if (certImageUrl && certImageUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(certImageUrl);
+    }
     if (cert.imageBlob) {
-      const url = URL.createObjectURL(cert.imageBlob);
-      setCertImageUrl(url);
+      // Local blob (from IndexedDB) — create a temporary URL
+      setCertImageUrl(URL.createObjectURL(cert.imageBlob));
+    } else if (cert.imageUrl) {
+      // Remote URL from Firebase Storage — use directly
+      setCertImageUrl(cert.imageUrl);
     } else {
       setCertImageUrl('');
     }
-    
-    // Open Dialog
     if (dialogRef.current) {
       dialogRef.current.showModal();
     }
@@ -118,10 +123,11 @@ export default function Repository({ refreshTrigger, onRecordDeleted }) {
     }
     setSelectedCert(null);
     setIsEditing(false);
-    if (certImageUrl) {
+    // Only revoke if it's a blob URL (not a remote https:// URL)
+    if (certImageUrl && certImageUrl.startsWith('blob:')) {
       URL.revokeObjectURL(certImageUrl);
-      setCertImageUrl('');
     }
+    setCertImageUrl('');
   };
 
   const startEditing = () => {

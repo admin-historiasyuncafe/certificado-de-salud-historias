@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, ShieldCheck, Database, Trash2, Save, Cloud, CloudOff, RefreshCw } from 'lucide-react';
+import { Calendar, ShieldCheck, Database, Trash2, Save, Cloud, CloudOff, RefreshCw, CheckCircle, XCircle, Loader } from 'lucide-react';
 import { saveCertificate, logNotification, getAllCertificates, deleteCertificate } from '../services/db';
-import { isFirebaseConfigured, getFirebaseConnectionError } from '../services/firebase';
+import { isFirebaseConfigured, getFirebaseConnectionError, setFirebaseConnectionError, getFirestoreDb } from '../services/firebase';
+import { collection, getDocs, query, limit } from 'firebase/firestore';
 
 export default function Settings({ onDataReset }) {
   const [validity, setValidity] = useState('1year');
@@ -14,6 +15,8 @@ export default function Settings({ onDataReset }) {
   const [firebaseConfigText, setFirebaseConfigText] = useState('');
   const [isFirebaseConnected, setIsFirebaseConnected] = useState(false);
   const [firebaseError, setFirebaseError] = useState(null);
+  const [connectionTestStatus, setConnectionTestStatus] = useState(null); // null | 'testing' | 'ok' | 'error'
+  const [connectionTestMsg, setConnectionTestMsg] = useState('');
 
   useEffect(() => {
     setValidity(localStorage.getItem('default_validity') || '1year');
@@ -47,8 +50,44 @@ export default function Settings({ onDataReset }) {
       }
     }
     setIsFirebaseConnected(isFirebaseConfigured());
-    setFirebaseError(getFirebaseConnectionError());
+    // Only show the stored error on first load — the user can re-test manually
+    const storedErr = getFirebaseConnectionError();
+    setFirebaseError(storedErr);
   }, []);
+
+  // Live connection test against Firestore
+  const testFirestoreConnection = async () => {
+    if (!isFirebaseConfigured()) {
+      setConnectionTestStatus('error');
+      setConnectionTestMsg('Firebase no está configurado.');
+      return;
+    }
+    setConnectionTestStatus('testing');
+    setConnectionTestMsg('');
+    try {
+      const db = getFirestoreDb();
+      const certsCol = collection(db, 'certificates');
+      const q = query(certsCol, limit(1));
+      // Race against a 8s timeout
+      await Promise.race([
+        getDocs(q),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Tiempo de espera agotado (8s). Revisa tu conexión a internet.')), 8000)
+        )
+      ]);
+      // Success!
+      setConnectionTestStatus('ok');
+      setConnectionTestMsg('¡Firestore accesible! La sincronización en la nube está funcionando correctamente.');
+      setFirebaseError(null);
+      setFirebaseConnectionError(null);
+    } catch (err) {
+      const msg = err?.message || String(err);
+      setConnectionTestStatus('error');
+      setConnectionTestMsg(msg);
+      setFirebaseError(msg);
+      setFirebaseConnectionError(msg);
+    }
+  };
 
   const handleSave = (e) => {
     e.preventDefault();
@@ -348,33 +387,81 @@ export default function Settings({ onDataReset }) {
               />
             </div>
 
-            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', margin: '0.5rem 0' }}>
+            {/* Connection Status & Test */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center', margin: '0.5rem 0' }}>
               <span className="form-label" style={{ margin: 0 }}>Estado:</span>
               {isFirebaseConnected ? (
                 <span style={{ color: 'hsl(var(--status-active))', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.9rem', fontWeight: 600 }}>
-                  <Cloud size={16} /> Conectado a la Nube (Firestore)
+                  <Cloud size={16} /> Firebase Configurado
                 </span>
               ) : (
                 <span style={{ color: 'hsl(var(--text-muted))', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.9rem' }}>
                   <CloudOff size={16} /> Solo almacenamiento local (IndexedDB)
                 </span>
               )}
+              {isFirebaseConnected && (
+                <button
+                  type="button"
+                  onClick={testFirestoreConnection}
+                  disabled={connectionTestStatus === 'testing'}
+                  className="btn btn-secondary"
+                  style={{ padding: '0.4rem 0.9rem', fontSize: '0.8rem', gap: '0.4rem' }}
+                >
+                  {connectionTestStatus === 'testing'
+                    ? <><RefreshCw size={14} className="spin-icon" /> Probando...</>
+                    : <><RefreshCw size={14} /> Probar Conexión</>}
+                </button>
+              )}
             </div>
 
-            {firebaseError && (
+            {/* Test result banner */}
+            {connectionTestStatus === 'ok' && (
               <div style={{
-                marginTop: '0.75rem',
-                padding: '0.75rem',
-                backgroundColor: 'hsl(var(--status-expired) / 0.15)',
-                border: '1px solid hsl(var(--status-expired) / 0.3)',
-                borderRadius: '8px',
-                color: 'hsl(var(--status-expired))',
-                fontSize: '0.85rem',
-                lineHeight: '1.4'
+                marginTop: '0.5rem', padding: '0.75rem', borderRadius: '8px',
+                backgroundColor: 'hsl(var(--status-active) / 0.12)',
+                border: '1px solid hsl(var(--status-active) / 0.3)',
+                color: 'hsl(var(--status-active))',
+                fontSize: '0.85rem', display: 'flex', alignItems: 'flex-start', gap: '0.5rem'
               }}>
-                <strong>⚠️ Error de Conexión:</strong> {firebaseError}
-                <div style={{ marginTop: '0.5rem', color: 'hsl(var(--text-secondary))', fontSize: '0.8rem' }}>
-                  Asegúrate de haber activado <strong>Cloud Firestore</strong> y <strong>Storage</strong> en la Consola de Firebase y configurado sus <strong>Reglas de Seguridad</strong> para permitir lectura/escritura pública en pruebas (ej: <code>allow read, write: if true;</code>).
+                <CheckCircle size={16} style={{ flexShrink: 0, marginTop: '1px' }} />
+                <span>{connectionTestMsg}</span>
+              </div>
+            )}
+
+            {connectionTestStatus === 'error' && (
+              <div style={{
+                marginTop: '0.5rem', padding: '0.75rem', borderRadius: '8px',
+                backgroundColor: 'hsl(var(--status-expired) / 0.12)',
+                border: '1px solid hsl(var(--status-expired) / 0.3)',
+                color: 'hsl(var(--status-expired))',
+                fontSize: '0.85rem', lineHeight: '1.5'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                  <XCircle size={16} style={{ flexShrink: 0, marginTop: '1px' }} />
+                  <strong>{connectionTestMsg}</strong>
+                </div>
+                <div style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.8rem', paddingLeft: '1.5rem' }}>
+                  Verifica que las <strong>Reglas de Firestore</strong> digan{' '}
+                  <code style={{ background: 'hsl(var(--bg-primary))', padding: '1px 5px', borderRadius: '4px' }}>
+                    allow read, write: if true;
+                  </code>{' '}
+                  y que hayas hecho clic en <strong>Publicar</strong> en la consola de Firebase.
+                </div>
+              </div>
+            )}
+
+            {/* Legacy error (from previous session) shown only if no test has been run yet */}
+            {!connectionTestStatus && firebaseError && (
+              <div style={{
+                marginTop: '0.5rem', padding: '0.75rem', borderRadius: '8px',
+                backgroundColor: 'hsl(var(--status-warning) / 0.1)',
+                border: '1px solid hsl(var(--status-warning) / 0.3)',
+                color: 'hsl(var(--status-warning))',
+                fontSize: '0.85rem', lineHeight: '1.4'
+              }}>
+                <strong>⚠️ Último error registrado:</strong> {firebaseError}
+                <div style={{ marginTop: '0.35rem', fontSize: '0.78rem', color: 'hsl(var(--text-secondary))' }}>
+                  Haz clic en <strong>Probar Conexión</strong> para verificar el estado actual.
                 </div>
               </div>
             )}
@@ -559,6 +646,14 @@ export default function Settings({ onDataReset }) {
 
         .green-text {
           color: hsl(var(--status-active));
+        }
+
+        /* Spinning animation for the test button */
+        .spin-icon {
+          animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
 
         @media (max-width: 900px) {

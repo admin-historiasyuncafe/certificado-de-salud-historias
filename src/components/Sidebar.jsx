@@ -6,10 +6,38 @@ import {
   Calendar, 
   Bell, 
   Settings, 
-  Coffee, 
   Menu, 
   X 
 } from 'lucide-react';
+
+const LogoIcon = ({ className, size = 24 }) => (
+  <svg 
+    viewBox="0 0 100 100" 
+    width={size} 
+    height={size} 
+    className={className}
+    style={{ display: 'inline-block', verticalAlign: 'middle' }}
+  >
+    <defs>
+      <linearGradient id="sidebarTealGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#0cd2db"/>
+        <stop offset="100%" stop-color="#068388"/>
+      </linearGradient>
+      <linearGradient id="sidebarGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#f3d5b5"/>
+        <stop offset="50%" stop-color="#e9c46a"/>
+        <stop offset="100%" stop-color="#a78258"/>
+      </linearGradient>
+    </defs>
+    {/* Lowercase "d" */}
+    <path d="M 38,42 A 12,12 0 1,0 38,66" fill="none" stroke="url(#sidebarTealGrad)" stroke-width="8" stroke-linecap="round"/>
+    <path d="M 38,30 L 38,66" fill="none" stroke="url(#sidebarTealGrad)" stroke-width="8" stroke-linecap="round"/>
+    {/* Uppercase "H" */}
+    <path d="M 54,30 L 54,66" fill="none" stroke="url(#sidebarGoldGrad)" stroke-width="8" stroke-linecap="round"/>
+    <path d="M 72,30 L 72,66" fill="none" stroke="url(#sidebarGoldGrad)" stroke-width="8" stroke-linecap="round"/>
+    <path d="M 54,48 L 72,48" fill="none" stroke="url(#sidebarGoldGrad)" stroke-width="8" stroke-linecap="round"/>
+  </svg>
+);
 
 export default function Sidebar({ currentView, onViewChange }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -37,7 +65,7 @@ export default function Sidebar({ currentView, onViewChange }) {
       {/* Mobile Top Navigation Header */}
       <header className="mobile-header">
         <div className="logo-container animate-fade-in" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <Coffee className="logo-icon animate-pulse" />
+          <LogoIcon className="logo-icon animate-pulse" size={28} />
           <span className="logo-text">DocuHistorias</span>
         </div>
         <button className="mobile-toggle" onClick={toggleMobileMenu} aria-label="Toggle Menu">
@@ -48,7 +76,7 @@ export default function Sidebar({ currentView, onViewChange }) {
       {/* Sidebar Container */}
       <aside className={`sidebar ${isOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-brand">
-          <Coffee className="logo-icon" />
+          <LogoIcon className="logo-icon" size={32} />
           <h1 className="logo-text">DocuHistorias</h1>
         </div>
 
