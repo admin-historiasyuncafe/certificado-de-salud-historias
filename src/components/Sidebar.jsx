@@ -66,7 +66,7 @@ export default function Sidebar({ currentView, onViewChange }) {
       <header className="mobile-header">
         <div className="logo-container animate-fade-in" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <LogoIcon className="logo-icon animate-pulse" size={28} />
-          <span className="logo-text">DocuHistorias</span>
+          <span className="logo-text">docuHistorias</span>
         </div>
         <button className="mobile-toggle" onClick={toggleMobileMenu} aria-label="Toggle Menu">
           {isOpen ? <X size={24} /> : <Menu size={24} />}
@@ -77,7 +77,7 @@ export default function Sidebar({ currentView, onViewChange }) {
       <aside className={`sidebar ${isOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-brand">
           <LogoIcon className="logo-icon" size={32} />
-          <h1 className="logo-text">DocuHistorias</h1>
+          <h1 className="logo-text">docuHistorias</h1>
         </div>
 
         <nav className="sidebar-nav">

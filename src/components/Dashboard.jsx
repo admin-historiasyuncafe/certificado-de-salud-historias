@@ -43,6 +43,18 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
   const dialogRef = useRef(null);
 
   useEffect(() => {
+    const handlePopState = (e) => {
+      if (dialogRef.current && dialogRef.current.open) {
+        closeDetails(true);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [certImageUrl]);
+
+  useEffect(() => {
     loadDashboardData();
   }, [refreshTrigger]);
 
@@ -120,11 +132,12 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
     }
     
     if (dialogRef.current) {
+      window.history.pushState({ modalOpen: true }, '');
       dialogRef.current.showModal();
     }
   };
 
-  const closeDetails = () => {
+  const closeDetails = (isPopState = false) => {
     if (dialogRef.current) {
       dialogRef.current.close();
     }
@@ -133,6 +146,9 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
     if (certImageUrl) {
       URL.revokeObjectURL(certImageUrl);
       setCertImageUrl('');
+    }
+    if (isPopState !== true && window.history.state?.modalOpen) {
+      window.history.back();
     }
   };
 

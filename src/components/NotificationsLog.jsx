@@ -25,6 +25,18 @@ export default function NotificationsLog({ refreshTrigger }) {
   const dialogRef = useRef(null);
 
   useEffect(() => {
+    const handlePopState = (e) => {
+      if (dialogRef.current && dialogRef.current.open) {
+        closeDetails(true);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [certImageUrl]);
+
+  useEffect(() => {
     loadLogs();
   }, [refreshTrigger]);
 
@@ -63,6 +75,7 @@ export default function NotificationsLog({ refreshTrigger }) {
         }
         
         if (dialogRef.current) {
+          window.history.pushState({ modalOpen: true }, '');
           dialogRef.current.showModal();
         }
       } else {
@@ -74,7 +87,7 @@ export default function NotificationsLog({ refreshTrigger }) {
     }
   };
 
-  const closeDetails = () => {
+  const closeDetails = (isPopState = false) => {
     if (dialogRef.current) {
       dialogRef.current.close();
     }
@@ -82,6 +95,9 @@ export default function NotificationsLog({ refreshTrigger }) {
     if (certImageUrl) {
       URL.revokeObjectURL(certImageUrl);
       setCertImageUrl('');
+    }
+    if (isPopState !== true && window.history.state?.modalOpen) {
+      window.history.back();
     }
   };
 
