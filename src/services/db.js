@@ -16,30 +16,47 @@ import {
 
 // ── Image helpers: compress + convert Blob <-> base64 for Firestore storage ──
 async function blobToBase64(blob) {
-  // Compress image using canvas before encoding to keep under Firestore 1MB limit
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(blob);
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      // Downscale if larger than 1200px wide
-      const maxW = 1200;
-      let { width, height } = img;
-      if (width > maxW) {
-        height = Math.round((height * maxW) / width);
-        width = maxW;
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-      // Encode as JPEG at 80% quality
-      const base64 = canvas.toDataURL('image/jpeg', 0.8);
-      resolve(base64); // full data URL e.g. "data:image/jpeg;base64,..."
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image load failed')); };
-    img.src = url;
-  });
+  const mime = blob.type || '';
+  const isImage = mime.startsWith('image/');
+
+  if (isImage) {
+    // For images: compress via canvas (max 1200px wide, 80% JPEG quality)
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(blob);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const maxW = 1200;
+        let { width, height } = img;
+        if (width > maxW) {
+          height = Math.round((height * maxW) / width);
+          width = maxW;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        // Fallback to direct FileReader if canvas fails
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Image encoding failed'));
+        reader.readAsDataURL(blob);
+      };
+      img.src = url;
+    });
+  } else {
+    // For PDFs and other file types: encode directly without canvas
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('File encoding failed'));
+      reader.readAsDataURL(blob);
+    });
+  }
 }
 
 function base64ToBlob(base64DataUrl) {
