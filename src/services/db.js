@@ -541,3 +541,34 @@ export async function getNotificationLogs() {
     request.onerror = () => reject(request.error);
   });
 }
+
+// Delete a single notification log
+export async function deleteNotificationLog(id) {
+  // ── STEP 1: Delete locally first ──
+  try {
+    const localDb = await openDatabase();
+    await new Promise((resolve, reject) => {
+      const transaction = localDb.transaction('notifications', 'readwrite');
+      const store = transaction.objectStore('notifications');
+      const request = store.delete(id);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  } catch (localErr) {
+    console.warn('Local IndexedDB delete notification failed:', localErr);
+  }
+
+  // ── STEP 2: Try to delete from Firestore ──
+  if (isFirebaseConfigured()) {
+    try {
+      const firestoreDb = getFirestoreDb();
+      const docRef = doc(firestoreDb, 'notifications', id);
+      await withTimeout(deleteDoc(docRef), 8000, 'Firestore delete notification timeout');
+    } catch (err) {
+      console.warn('Firestore delete notification failed (local delete succeeded):', err.message);
+    }
+  }
+
+  return true;
+}
+

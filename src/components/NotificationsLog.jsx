@@ -13,7 +13,7 @@ import {
   Check,
   MessageCircle
 } from 'lucide-react';
-import { getNotificationLogs, getCertificateById, deleteCertificate } from '../services/db';
+import { getNotificationLogs, getCertificateById, deleteCertificate, deleteNotificationLog } from '../services/db';
 import { downloadICSFile } from '../utils/calendar';
 
 export default function NotificationsLog({ refreshTrigger }) {
@@ -132,6 +132,18 @@ export default function NotificationsLog({ refreshTrigger }) {
     }
   };
 
+  const handleDeleteLog = async (id) => {
+    const confirm = window.confirm('¿Está seguro de que desea eliminar este registro de alerta del historial?');
+    if (!confirm) return;
+    try {
+      await deleteNotificationLog(id);
+      loadLogs();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+
   return (
     <div className="logs-container animate-fade-in">
       <div className="view-header">
@@ -177,7 +189,7 @@ export default function NotificationsLog({ refreshTrigger }) {
                   <th>Fecha de Envío</th>
                   <th>Vencimiento</th>
                   <th>Estado</th>
-                  <th className="actions-header">Acceso al Archivo</th>
+                  <th className="actions-header">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -234,12 +246,21 @@ export default function NotificationsLog({ refreshTrigger }) {
                     <td>
                       <span className="status-indicator-sent">Enviado</span>
                     </td>
-                    <td className="actions-cell">
+                    <td className="actions-cell" style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                       <button 
                         className="btn btn-secondary py-1 px-3 btn-small"
                         onClick={() => viewCertificate(log.certificateId)}
+                        title="Ver Documento"
                       >
                         <Eye size={14} /> Ver Doc
+                      </button>
+                      <button 
+                        className="btn btn-danger py-1 px-3 btn-small"
+                        onClick={() => handleDeleteLog(log.id)}
+                        title="Eliminar Alerta"
+                        style={{ padding: '0.4rem 0.6rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        <Trash2 size={14} />
                       </button>
                     </td>
                   </tr>
