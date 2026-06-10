@@ -41,7 +41,6 @@ export default function App() {
       const todayStr = new Date().toISOString().split('T')[0];
       const today = new Date(todayStr);
       const warningPeriod = parseInt(localStorage.getItem('warning_period') || '14', 10);
-      const recipient = localStorage.getItem('notification_recipient') || 'hr@company.com';
       const logs = await getNotificationLogs();
       
       let logsCreated = false;
@@ -68,7 +67,7 @@ export default function App() {
             await logNotification({
               certificateId: cert.id,
               employeeName: cert.employeeName,
-              recipient: recipient,
+              recipient: 'Manual (WhatsApp/SMS)',
               type: 'warning-14day',
               sentAt: new Date().toISOString(),
               expirationDate: cert.expirationDate,
@@ -91,7 +90,7 @@ export default function App() {
             await logNotification({
               certificateId: cert.id,
               employeeName: cert.employeeName,
-              recipient: recipient,
+              recipient: 'Manual (WhatsApp/SMS)',
               type: 'expired-alert',
               sentAt: new Date().toISOString(),
               expirationDate: cert.expirationDate,

@@ -8,7 +8,10 @@ import {
   Trash2, 
   X,
   FileText,
-  Download
+  Download,
+  Copy,
+  Check,
+  MessageCircle
 } from 'lucide-react';
 import { getNotificationLogs, getCertificateById, deleteCertificate } from '../services/db';
 import { downloadICSFile } from '../utils/calendar';
@@ -22,7 +25,23 @@ export default function NotificationsLog({ refreshTrigger }) {
   // Modal State
   const [selectedCert, setSelectedCert] = useState(null);
   const [certImageUrl, setCertImageUrl] = useState('');
+  const [copiedId, setCopiedId] = useState(null);
   const dialogRef = useRef(null);
+
+  const getReminderText = (employeeName, expirationDate) => {
+    const defaultTpl = 'Hola [Nombre], te recordamos que debes actualizar tu Certificado de Salud que vence el [fecha]. ¡Gracias!';
+    const template = localStorage.getItem('notification_template') || defaultTpl;
+    const formattedDate = expirationDate ? expirationDate : 'la fecha indicada';
+    return template
+      .replace(/\[Nombre\]/g, employeeName)
+      .replace(/\[fecha\]/g, formattedDate);
+  };
+
+  const copyToClipboard = (text, logId) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(logId);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   useEffect(() => {
     const handlePopState = (e) => {
@@ -117,7 +136,7 @@ export default function NotificationsLog({ refreshTrigger }) {
     <div className="logs-container animate-fade-in">
       <div className="view-header">
         <h2 className="view-title">Historial de Notificaciones</h2>
-        <p className="view-subtitle">Registro de las notificaciones de cumplimiento enviadas por correo electrónico.</p>
+        <p className="view-subtitle">Registro de las alertas y recordatorios de cumplimiento del sistema.</p>
       </div>
 
       {/* Control Bar */}
@@ -154,7 +173,7 @@ export default function NotificationsLog({ refreshTrigger }) {
                 <tr>
                   <th>Empleado</th>
                   <th>Tipo de Notificación</th>
-                  <th>Destinatario</th>
+                  <th>Canal de Alerta / Acción</th>
                   <th>Fecha de Envío</th>
                   <th>Vencimiento</th>
                   <th>Estado</th>
@@ -176,7 +195,35 @@ export default function NotificationsLog({ refreshTrigger }) {
                       </div>
                     </td>
                     <td>
-                      <code className="email-badge">{log.recipient}</code>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        {log.recipient && log.recipient.includes('@') ? (
+                          <code className="email-badge">{log.recipient}</code>
+                        ) : (
+                          <>
+                            <code className="email-badge" style={{ backgroundColor: 'rgba(37, 211, 102, 0.15)', borderColor: 'rgba(37, 211, 102, 0.3)', color: '#25D366' }}>
+                              WhatsApp / SMS
+                            </code>
+                            <button
+                              onClick={() => copyToClipboard(getReminderText(log.employeeName, log.expirationDate), log.id)}
+                              className="btn btn-secondary"
+                              style={{ padding: '0.2rem 0.4rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                              title="Copiar mensaje de recordatorio"
+                            >
+                              {copiedId === log.id ? <Check size={12} className="green-text" /> : <Copy size={12} />}
+                            </button>
+                            <a
+                              href={`https://wa.me/?text=${encodeURIComponent(getReminderText(log.employeeName, log.expirationDate))}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn btn-secondary"
+                              style={{ padding: '0.2rem 0.4rem', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#25D366', borderColor: '#25D366', color: '#fff' }}
+                              title="Enviar por WhatsApp"
+                            >
+                              <MessageCircle size={12} />
+                            </a>
+                          </>
+                        )}
+                      </div>
                     </td>
                     <td>
                       {new Date(log.sentAt).toLocaleString()}

@@ -11,7 +11,11 @@ import {
   User, 
   Clock, 
   AlertTriangle,
-  Mail
+  Mail,
+  Copy,
+  Check,
+  MessageCircle,
+  Paperclip
 } from 'lucide-react';
 import { getAllCertificates, deleteCertificate, getNotificationLogs, saveCertificate } from '../services/db';
 import { downloadICSFile } from '../utils/calendar';
@@ -25,6 +29,22 @@ export default function Repository({ refreshTrigger, onRecordDeleted }) {
   const [selectedCert, setSelectedCert] = useState(null);
   const [certImageUrl, setCertImageUrl] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
+
+  const getReminderText = (employeeName, expirationDate) => {
+    const defaultTpl = 'Hola [Nombre], te recordamos que debes actualizar tu Certificado de Salud que vence el [fecha]. ¡Gracias!';
+    const template = localStorage.getItem('notification_template') || defaultTpl;
+    const formattedDate = expirationDate ? expirationDate : 'la fecha indicada';
+    return template
+      .replace(/\[Nombre\]/g, employeeName)
+      .replace(/\[fecha\]/g, formattedDate);
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   // Edit form state
   const [isEditing, setIsEditing] = useState(false);
@@ -459,7 +479,7 @@ export default function Repository({ refreshTrigger, onRecordDeleted }) {
                       />
                       {(editPreview || certImageUrl) ? (
                         <div style={{ position: 'relative', marginBottom: '0.5rem' }}>
-                          {(editPreview || certImageUrl).endsWith('.pdf') || (editFile?.type === 'application/pdf') ? (
+                          {(editPreview || certImageUrl || '').endsWith('.pdf') || (editFile?.type === 'application/pdf') ? (
                             <div style={{ padding: '0.75rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
                               <FileText size={18} />
                               <span>{editFile?.name || selectedCert?.imageName || 'Documento adjunto'}</span>
@@ -554,27 +574,58 @@ export default function Repository({ refreshTrigger, onRecordDeleted }) {
                     </div>
 
                     <div className="meta-card alert-history">
-                      <h3>Auditoría de Alertas Automáticas</h3>
-                      {getCertLogs(selectedCert.id).length === 0 ? (
-                        <p className="no-alerts-text">Aún no se han programado ni enviado alertas automáticas.</p>
-                      ) : (
-                        <ul className="alert-list-trail">
-                          {getCertLogs(selectedCert.id).map(log => (
-                            <li key={log.id} className="alert-trail-item">
-                              <div className="alert-item-header">
-                                <span className="alert-type">
-                                  <Mail size={12} className="alert-mail-icon" />
-                                  {log.type === 'warning-14day' ? 'Correo de Aviso (2 semanas)' : 'Correo de Alerta de Vencimiento'}
-                                </span>
-                                <span className="alert-timestamp">{new Date(log.sentAt).toLocaleDateString()}</span>
-                              </div>
-                              <p className="alert-details-desc">
-                                Enviado auto. a: <strong>{log.recipient}</strong>. Estado: <span className="green-text">Enviado</span>
-                              </p>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
+                      <h3>Recordatorio de Vencimiento</h3>
+                      <p style={{ fontSize: '0.85rem', color: 'hsl(var(--text-secondary))', marginBottom: '0.75rem', lineHeight: '1.4' }}>
+                        Copia este mensaje o envíalo directamente por WhatsApp para recordarle al empleado que debe renovar su documento.
+                      </p>
+                      
+                      <div style={{
+                        padding: '0.85rem',
+                        background: 'rgba(255, 255, 255, 0.04)',
+                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                        borderRadius: '8px',
+                        fontSize: '0.9rem',
+                        lineHeight: '1.4',
+                        color: 'hsl(var(--text-secondary))',
+                        marginBottom: '1rem',
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word'
+                      }}>
+                        {getReminderText(selectedCert.employeeName, selectedCert.expirationDate)}
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '0.75rem' }}>
+                        <button 
+                          className="btn btn-secondary" 
+                          style={{ flex: 1, gap: '0.5rem', fontSize: '0.85rem', padding: '0.6rem' }} 
+                          onClick={() => copyToClipboard(getReminderText(selectedCert.employeeName, selectedCert.expirationDate))}
+                        >
+                          {copied ? <Check size={16} className="green-text" /> : <Copy size={16} />}
+                          {copied ? '¡Copiado!' : 'Copiar Mensaje'}
+                        </button>
+                        <a 
+                          href={`https://wa.me/?text=${encodeURIComponent(getReminderText(selectedCert.employeeName, selectedCert.expirationDate))}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-primary"
+                          style={{ 
+                            flex: 1, 
+                            gap: '0.5rem', 
+                            fontSize: '0.85rem', 
+                            padding: '0.6rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            textDecoration: 'none',
+                            backgroundColor: '#25D366',
+                            borderColor: '#25D366',
+                            color: '#fff'
+                          }}
+                        >
+                          <MessageCircle size={16} />
+                          WhatsApp
+                        </a>
+                      </div>
                     </div>
                   </>
                 )}

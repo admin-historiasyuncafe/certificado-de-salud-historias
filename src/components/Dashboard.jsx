@@ -11,7 +11,8 @@ import {
   Download,
   Trash2,
   X,
-  FileText
+  FileText,
+  Paperclip
 } from 'lucide-react';
 import { getAllCertificates, deleteCertificate, getNotificationLogs, saveCertificate } from '../services/db';
 import { downloadICSFile } from '../utils/calendar';
@@ -39,8 +40,11 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
   const [editRule, setEditRule] = useState('1year');
   const [editExpirationDate, setEditExpirationDate] = useState('');
   const [editNotes, setEditNotes] = useState('');
+  const [editFile, setEditFile] = useState(null);       // new image chosen during edit
+  const [editPreview, setEditPreview] = useState('');   // preview of new image
 
   const dialogRef = useRef(null);
+  const editFileRef = useRef(null);
 
   useEffect(() => {
     const handlePopState = (e) => {
@@ -124,9 +128,16 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
 
   const openDetails = (cert) => {
     setSelectedCert(cert);
+    // Revoke any previous object URL to avoid memory leaks
+    if (certImageUrl && certImageUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(certImageUrl);
+    }
     if (cert.imageBlob) {
-      const url = URL.createObjectURL(cert.imageBlob);
-      setCertImageUrl(url);
+      // Local blob (from IndexedDB) — create a temporary URL
+      setCertImageUrl(URL.createObjectURL(cert.imageBlob));
+    } else if (cert.imageUrl) {
+      // Remote URL from Firebase Storage — use directly
+      setCertImageUrl(cert.imageUrl);
     } else {
       setCertImageUrl('');
     }
@@ -143,10 +154,15 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
     }
     setSelectedCert(null);
     setIsEditing(false);
-    if (certImageUrl) {
+    // Only revoke if it's a blob URL (not a remote https:// URL)
+    if (certImageUrl && certImageUrl.startsWith('blob:')) {
       URL.revokeObjectURL(certImageUrl);
-      setCertImageUrl('');
     }
+    setCertImageUrl('');
+    if (editPreview && editPreview.startsWith('blob:')) {
+      URL.revokeObjectURL(editPreview);
+    }
+    setEditPreview('');
     if (isPopState !== true && window.history.state?.modalOpen) {
       window.history.back();
     }
@@ -160,6 +176,8 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
     setEditRule(selectedCert.businessRule || '1year');
     setEditExpirationDate(selectedCert.expirationDate || '');
     setEditNotes(selectedCert.notes || '');
+    setEditFile(null);
+    setEditPreview('');
     setIsEditing(true);
   };
 
@@ -180,6 +198,10 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
         businessRule: editRule,
         expirationDate: editRule === 'none' ? '' : editExpirationDate,
         notes: editNotes.trim(),
+        // Use newly chosen file if available, otherwise keep existing
+        imageBlob: editFile || selectedCert.imageBlob || null,
+        imageName: editFile ? editFile.name : (selectedCert.imageName || null),
+        imageType: editFile ? editFile.type : (selectedCert.imageType || null),
       };
 
       const saved = await saveCertificate(updatedCert);
@@ -510,6 +532,56 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
                         onChange={e => setEditNotes(e.target.value)} 
                         rows={2} 
                       />
+                    </div>
+
+                    {/* Image / Document replacement */}
+                    <div className="form-group">
+                      <label className="form-label">Documento / Imagen</label>
+                      <input
+                        ref={editFileRef}
+                        type="file"
+                        accept="image/*,application/pdf"
+                        style={{ display: 'none' }}
+                        onChange={e => {
+                          const f = e.target.files?.[0];
+                          if (!f) return;
+                          setEditFile(f);
+                          if (editPreview.startsWith('blob:')) URL.revokeObjectURL(editPreview);
+                          setEditPreview(URL.createObjectURL(f));
+                        }}
+                      />
+                      {(editPreview || certImageUrl) ? (
+                        <div style={{ position: 'relative', marginBottom: '0.5rem' }}>
+                          {(editPreview || certImageUrl || '').endsWith('.pdf') || (editFile?.type === 'application/pdf') ? (
+                            <div style={{ padding: '0.75rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
+                              <FileText size={18} />
+                              <span>{editFile?.name || selectedCert?.imageName || 'Documento adjunto'}</span>
+                            </div>
+                          ) : (
+                            <img
+                              src={editPreview || certImageUrl}
+                              alt="Vista previa"
+                              style={{ width: '100%', maxHeight: '160px', objectFit: 'contain', borderRadius: '8px', background: 'rgba(255,255,255,0.05)' }}
+                            />
+                          )}
+                          {editFile && (
+                            <span style={{ fontSize: '0.75rem', color: 'var(--color-accent, #a78bfa)', marginTop: '0.25rem', display: 'block' }}>
+                              ✓ Nuevo archivo seleccionado
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <p style={{ fontSize: '0.8rem', opacity: 0.5, margin: '0 0 0.5rem' }}>Sin documento adjunto</p>
+                      )}
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        style={{ width: '100%', fontSize: '0.85rem' }}
+                        onClick={() => editFileRef.current?.click()}
+                      >
+                        <Paperclip size={14} style={{ marginRight: '0.4rem' }} />
+                        {certImageUrl || editPreview ? 'Reemplazar documento' : 'Adjuntar documento'}
+                      </button>
                     </div>
 
                     <div className="meta-actions">

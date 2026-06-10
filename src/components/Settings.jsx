@@ -7,7 +7,7 @@ import { collection, getDocs, query, limit } from 'firebase/firestore';
 export default function Settings({ onDataReset }) {
   const [validity, setValidity] = useState('1year');
   const [warningPeriod, setWarningPeriod] = useState(14);
-  const [recipient, setRecipient] = useState('hr@company.com');
+  const [template, setTemplate] = useState('Hola [Nombre], te recordamos que debes actualizar tu Certificado de Salud que vence el [fecha]. ¡Gracias!');
   const [statusMessage, setStatusMessage] = useState({ text: '', type: '' });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -21,7 +21,7 @@ export default function Settings({ onDataReset }) {
   useEffect(() => {
     setValidity(localStorage.getItem('default_validity') || '1year');
     setWarningPeriod(parseInt(localStorage.getItem('warning_period') || '14', 10));
-    setRecipient(localStorage.getItem('notification_recipient') || 'hr@company.com');
+    setTemplate(localStorage.getItem('notification_template') || 'Hola [Nombre], te recordamos que debes actualizar tu Certificado de Salud que vence el [fecha]. ¡Gracias!');
 
     // Load Firebase Config
     const localConfig = localStorage.getItem('firebase_config');
@@ -93,7 +93,7 @@ export default function Settings({ onDataReset }) {
     e.preventDefault();
     localStorage.setItem('default_validity', validity);
     localStorage.setItem('warning_period', warningPeriod.toString());
-    localStorage.setItem('notification_recipient', recipient);
+    localStorage.setItem('notification_template', template);
     setStatusMessage({ text: '¡Configuración guardada con éxito!', type: 'success' });
     setTimeout(() => setStatusMessage({ text: '', type: '' }), 3000);
   };
@@ -195,7 +195,7 @@ export default function Settings({ onDataReset }) {
       await logNotification({
         certificateId: 'cert_4',
         employeeName: 'Marcos Vargas',
-        recipient: recipient,
+        recipient: 'Manual (WhatsApp/SMS)',
         type: 'warning-14day',
         sentAt: new Date(today.getTime() - (29 * 24 * 60 * 60 * 1000)).toISOString(),
         expirationDate: getOffsetDate(-15),
@@ -205,7 +205,7 @@ export default function Settings({ onDataReset }) {
       await logNotification({
         certificateId: 'cert_4',
         employeeName: 'Marcos Vargas',
-        recipient: recipient,
+        recipient: 'Manual (WhatsApp/SMS)',
         type: 'expired-alert',
         sentAt: new Date(today.getTime() - (15 * 24 * 60 * 60 * 1000)).toISOString(),
         expirationDate: getOffsetDate(-15),
@@ -216,7 +216,7 @@ export default function Settings({ onDataReset }) {
       await logNotification({
         certificateId: 'cert_3',
         employeeName: 'Elena Rodríguez',
-        recipient: recipient,
+        recipient: 'Manual (WhatsApp/SMS)',
         type: 'warning-14day',
         sentAt: new Date(today.getTime() - (4 * 24 * 60 * 60 * 1000)).toISOString(),
         expirationDate: getOffsetDate(10),
@@ -344,16 +344,19 @@ export default function Settings({ onDataReset }) {
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="recipient-input">Destinatario de Notificaciones de RRHH</label>
-              <input
-                type="email"
-                id="recipient-input"
+              <label className="form-label" htmlFor="template-input">Plantilla de Recordatorio por Texto (SMS / WhatsApp)</label>
+              <textarea
+                id="template-input"
                 className="form-input"
-                placeholder="hr@company.com"
-                value={recipient}
-                onChange={(e) => setRecipient(e.target.value)}
+                rows="4"
+                style={{ resize: 'vertical' }}
+                value={template}
+                onChange={(e) => setTemplate(e.target.value)}
                 required
               />
+              <span style={{ fontSize: '0.78rem', color: 'hsl(var(--text-muted))', marginTop: '0.25rem', display: 'block' }}>
+                Usa <strong>[Nombre]</strong> para el nombre y <strong>[fecha]</strong> para la fecha de vencimiento.
+              </span>
             </div>
 
             <button type="submit" className="btn btn-primary">
