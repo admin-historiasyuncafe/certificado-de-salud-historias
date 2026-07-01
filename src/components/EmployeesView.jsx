@@ -201,7 +201,7 @@ export default function EmployeesView({ refreshTrigger, onUploadMissingDoc }) {
               </div>
             ) : (
               <div className="employees-cards-grid">
-                {filteredEmployees.map(emp => {
+                {[...filteredEmployees].sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })).map(emp => {
                   const percent = Math.round((emp.complianceCount / emp.totalCount) * 100);
                   const isSelected = selectedEmployeeName === emp.name;
                   

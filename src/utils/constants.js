@@ -1,18 +1,18 @@
 export const DOCUMENT_TYPES = [
-  'Certificado de salud',
-  'Identificación (ID)',
-  'Certificado de Buena Conducta',
-  'Certificado de Antecedentes Penales',
-  'Dirección física y postal',
-  'Tarjeta de Seguro Social',
-  'Solicitud de empleo',
-  'Contrato de empleo',
   'Acuerdo de horario flexible',
   'Acuse de recibo del manual de empleado',
   'Acuse de recibo manejo del dinero',
+  'Certificado de Antecedentes Penales',
+  'Certificado de Buena Conducta',
+  'Certificado de salud',
+  'Certificado de ServSafe',
+  'Contrato de empleo',
   'Credo, cultura y valores (documento firmado)',
+  'Dirección física y postal',
   'Forma I-9',
-  'Forma W-4',
   'Forma PR-SD/NH-1',
-  'Certificado de ServSafe'
+  'Forma W-4',
+  'Identificación (ID)',
+  'Solicitud de empleo',
+  'Tarjeta de Seguro Social'
 ];
