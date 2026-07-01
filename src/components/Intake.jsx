@@ -16,7 +16,7 @@ import {
 import { saveCertificate } from '../services/db';
 import { DOCUMENT_TYPES } from '../utils/constants';
 
-export default function Intake({ onUploadSuccess }) {
+export default function Intake({ onUploadSuccess, preloadData, clearPreload }) {
   // ── Form fields ──────────────────────────────────────────────────────────────
   const [employeeName, setEmployeeName] = useState('');
   const [documentType, setDocumentType] = useState('Certificado de salud');
@@ -43,6 +43,30 @@ export default function Intake({ onUploadSuccess }) {
   const fileInputRef = useRef(null);
   const videoRef     = useRef(null);
   const streamRef    = useRef(null);
+
+  // ── Pre-populate from preloadData ──────────────────────────────────────────
+  useEffect(() => {
+    if (preloadData) {
+      if (preloadData.employeeName) {
+        setEmployeeName(preloadData.employeeName);
+      }
+      if (preloadData.documentType) {
+        setDocumentType(preloadData.documentType);
+        
+        // Auto-set rules for typical expiring vs non-expiring documents
+        const doc = preloadData.documentType;
+        if (doc === 'Certificado de salud' || doc === 'Certificado de Buena Conducta' || doc === 'Certificado de Antecedentes Penales') {
+          setBusinessRule('1year');
+        } else {
+          setBusinessRule('none');
+          setExpirationDate('');
+        }
+      }
+      if (clearPreload) {
+        clearPreload();
+      }
+    }
+  }, [preloadData, clearPreload]);
 
   // ── Auto-calculate expiration from issueDate + businessRule ─────────────────
   useEffect(() => {

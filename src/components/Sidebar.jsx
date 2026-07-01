@@ -7,7 +7,8 @@ import {
   Bell, 
   Settings, 
   Menu, 
-  X 
+  X,
+  Users
 } from 'lucide-react';
 
 const LogoIcon = ({ className, size = 24 }) => (
@@ -28,6 +29,7 @@ export default function Sidebar({ currentView, onViewChange }) {
     { id: 'dashboard', label: 'Panel de Control', icon: LayoutDashboard },
     { id: 'intake', label: 'Subir Documento', icon: Upload },
     { id: 'repository', label: 'Repositorio', icon: Database },
+    { id: 'employees', label: 'Expedientes', icon: Users },
     { id: 'calendar', label: 'Calendario', icon: Calendar },
     { id: 'notifications', label: 'Registro de Alertas', icon: Bell },
     { id: 'settings', label: 'Configuración', icon: Settings },

@@ -6,12 +6,11 @@ import Repository from './components/Repository';
 import CalendarView from './components/CalendarView';
 import NotificationsLog from './components/NotificationsLog';
 import Settings from './components/Settings';
-import { getAllCertificates, logNotification, getNotificationLogs } from './services/db';
-
-export default function App() {
+import EmployeesView from './components/EmployeesView';
+import { getAllCertificates, logNotification, getNotificationLogs } from './services/db';export default function App() {
   const [currentView, setCurrentView] = useState('dashboard');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-
+  const [intakePreload, setIntakePreload] = useState(null);
   // Request browser notification permissions on mount
   useEffect(() => {
     if ("Notification" in window && Notification.permission === "default") {
@@ -140,6 +139,8 @@ export default function App() {
         return (
           <Intake 
             onUploadSuccess={handleUploadSuccess} 
+            preloadData={intakePreload}
+            clearPreload={() => setIntakePreload(null)}
           />
         );
       case 'repository':
@@ -147,6 +148,16 @@ export default function App() {
           <Repository 
             refreshTrigger={refreshTrigger} 
             onRecordDeleted={handleSyncRefresh} 
+          />
+        );
+      case 'employees':
+        return (
+          <EmployeesView 
+            refreshTrigger={refreshTrigger}
+            onUploadMissingDoc={(employeeName, documentType) => {
+              setIntakePreload({ employeeName, documentType });
+              setCurrentView('intake');
+            }}
           />
         );
       case 'calendar':
