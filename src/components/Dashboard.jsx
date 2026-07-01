@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { getAllCertificates, deleteCertificate, getNotificationLogs, saveCertificate } from '../services/db';
 import { downloadICSFile } from '../utils/calendar';
+import { DOCUMENT_TYPES } from '../utils/constants';
 
 export default function Dashboard({ refreshTrigger, onViewChange }) {
   const [stats, setStats] = useState({
@@ -35,6 +36,7 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
   // Edit form state
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
+  const [editDocType, setEditDocType] = useState('Certificado de salud');
   const [editDept, setEditDept] = useState('');
   const [editIssueDate, setEditIssueDate] = useState('');
   const [editRule, setEditRule] = useState('1year');
@@ -166,11 +168,10 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
     if (isPopState !== true && window.history.state?.modalOpen) {
       window.history.back();
     }
-  };
-
-  const startEditing = () => {
+  };  const startEditing = () => {
     if (!selectedCert) return;
     setEditName(selectedCert.employeeName || '');
+    setEditDocType(selectedCert.documentType || 'Certificado de salud');
     setEditDept(selectedCert.department || '');
     setEditIssueDate(selectedCert.issueDate || '');
     setEditRule(selectedCert.businessRule || '1year');
@@ -193,6 +194,7 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
       const updatedCert = {
         ...selectedCert,
         employeeName: editName.trim(),
+        documentType: editDocType,
         department: editDept.trim(),
         issueDate: editIssueDate,
         businessRule: editRule,
@@ -203,7 +205,6 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
         imageName: editFile ? editFile.name : (selectedCert.imageName || null),
         imageType: editFile ? editFile.type : (selectedCert.imageType || null),
       };
-
       const saved = await saveCertificate(updatedCert);
       setSelectedCert(saved);
       setIsEditing(false);
@@ -361,6 +362,9 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
                     >
                       <div className="urgent-item-info">
                         <h4 className="urgent-name">{cert.employeeName}</h4>
+                        <span style={{ fontSize: '0.78rem', color: 'hsl(var(--accent-cyan))', display: 'block', margin: '2px 0' }}>
+                          {cert.documentType || 'Certificado de salud'}
+                        </span>
                         <p className="urgent-date">
                           Vence: <strong>{cert.expirationDate}</strong>
                         </p>
@@ -386,7 +390,7 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
               </p>
               <div className="action-buttons-group">
                 <button className="btn btn-primary" onClick={() => onViewChange('intake')}>
-                  Subir Nuevo Certificado
+                  Subir Nuevo Documento
                 </button>
                 <button className="btn btn-secondary" onClick={() => onViewChange('calendar')}>
                   Abrir Calendario de Cumplimiento
@@ -464,7 +468,7 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
                 {isEditing ? (
                   <form onSubmit={saveEdit} className="meta-card form-panel" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', border: 'none', background: 'transparent', padding: 0 }}>
                     <h3>Editar Información</h3>
-                    
+
                     <div className="form-group">
                       <label className="form-label">Nombre del Empleado *</label>
                       <input 
@@ -474,6 +478,20 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
                         onChange={e => setEditName(e.target.value)} 
                         required 
                       />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Tipo de Documento *</label>
+                      <select 
+                        className="form-input" 
+                        value={editDocType} 
+                        onChange={e => setEditDocType(e.target.value)}
+                        required
+                      >
+                        {DOCUMENT_TYPES.map(type => (
+                          <option key={type} value={type}>{type}</option>
+                        ))}
+                      </select>
                     </div>
 
                     <div className="form-group">
@@ -592,11 +610,18 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
                 ) : (
                   <div className="meta-card">
                     <h3>Resumen de Cumplimiento</h3>
-                    
+
                     <div className="meta-detail-row">
                       <span className="meta-label">Estado</span>
                       <span className={`badge badge-${selectedCert.status}`}>
                         {selectedCert.status === 'active' ? 'Activo' : selectedCert.status === 'expiring' ? 'Vence Pronto' : 'Vencido'}
+                      </span>
+                    </div>
+
+                    <div className="meta-detail-row">
+                      <span className="meta-label">Tipo de Documento</span>
+                      <span className="meta-value" style={{ color: 'hsl(var(--accent-cyan))', fontWeight: '600' }}>
+                        {selectedCert.documentType || 'Certificado de salud'}
                       </span>
                     </div>
 

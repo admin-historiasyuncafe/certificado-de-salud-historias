@@ -197,6 +197,9 @@ export default function NotificationsLog({ refreshTrigger }) {
                   <tr key={log.id}>
                     <td>
                       <span className="emp-name-cell">{log.employeeName}</span>
+                      <span style={{ display: 'block', fontSize: '0.78rem', color: 'hsl(var(--accent-cyan))', marginTop: '2px' }}>
+                        {log.documentType || 'Certificado de salud'}
+                      </span>
                     </td>
                     <td>
                       <div className="notif-type-cell">
@@ -311,6 +314,13 @@ export default function NotificationsLog({ refreshTrigger }) {
                     <span className="meta-label">Estado</span>
                     <span className={`badge badge-${selectedCert.status}`}>
                       {selectedCert.status === 'active' ? 'Activo' : selectedCert.status === 'expiring' ? 'Vence Pronto' : 'Vencido'}
+                    </span>
+                  </div>
+
+                  <div className="meta-detail-row">
+                    <span className="meta-label">Tipo de Documento</span>
+                    <span className="meta-value" style={{ color: 'hsl(var(--accent-cyan))', fontWeight: '600' }}>
+                      {selectedCert.documentType || 'Certificado de salud'}
                     </span>
                   </div>
 

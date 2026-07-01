@@ -14,10 +14,12 @@ import {
   ClipboardList,
 } from 'lucide-react';
 import { saveCertificate } from '../services/db';
+import { DOCUMENT_TYPES } from '../utils/constants';
 
 export default function Intake({ onUploadSuccess }) {
   // ── Form fields ──────────────────────────────────────────────────────────────
   const [employeeName, setEmployeeName] = useState('');
+  const [documentType, setDocumentType] = useState('Certificado de salud');
   const [department, setDepartment]     = useState('');
   const [issueDate, setIssueDate]       = useState('');
   const [businessRule, setBusinessRule] = useState('1year');
@@ -143,6 +145,7 @@ export default function Intake({ onUploadSuccess }) {
     try {
       await saveCertificate({
         employeeName:   employeeName.trim(),
+        documentType:   documentType,
         department:     department.trim(),
         issueDate,
         expirationDate: businessRule === 'none' ? '' : expirationDate,
@@ -186,7 +189,7 @@ export default function Intake({ onUploadSuccess }) {
   };
 
   const handleReset = () => {
-    setEmployeeName(''); setDepartment(''); setIssueDate('');
+    setEmployeeName(''); setDocumentType('Certificado de salud'); setDepartment(''); setIssueDate('');
     setBusinessRule('1year'); setExpirationDate(''); setNotes('');
     setFile(null); setPreviewUrl(''); setSaveSuccess(false);
     setSavedName(''); setError('');
@@ -224,9 +227,9 @@ export default function Intake({ onUploadSuccess }) {
     <div className="intake-container animate-fade-in">
       {/* Header */}
       <div className="view-header">
-        <h2 className="view-title">Nuevo Certificado de Salud</h2>
+        <h2 className="view-title">Subir Documento de Empleado</h2>
         <p className="view-subtitle">
-          Ingrese los detalles del certificado del empleado. Todo el seguimiento y
+          Ingrese los detalles del documento del empleado. Todo el seguimiento y
           las alertas de vencimiento se gestionan automáticamente.
         </p>
       </div>
@@ -243,7 +246,7 @@ export default function Intake({ onUploadSuccess }) {
         <div className="glass-card form-panel">
           <div className="panel-heading">
             <ClipboardList size={18} />
-            <span>Detalles del Certificado</span>
+            <span>Detalles del Documento</span>
           </div>
 
           <form id="intake-form" onSubmit={handleSave} className="details-form" noValidate>
@@ -265,6 +268,46 @@ export default function Intake({ onUploadSuccess }) {
                   autoComplete="off"
                   required
                 />
+              </div>
+            </div>
+
+            {/* Document Type */}
+            <div className="form-group">
+              <label className="form-label" htmlFor="document-type">
+                Tipo de Documento <span className="required-star">*</span>
+              </label>
+              <div className="input-with-icon">
+                <FileText size={16} className="input-icon" />
+                <select
+                  id="document-type"
+                  className="form-input"
+                  value={documentType}
+                  onChange={e => {
+                    const selected = e.target.value;
+                    setDocumentType(selected);
+                    // Automatically adjust default rule based on document type
+                    if (selected === 'Certificado de salud') {
+                      setBusinessRule('1year');
+                    } else if (
+                      selected === 'Identificación (ID)' ||
+                      selected === 'Certificado de Buena Conducta' ||
+                      selected === 'Certificado de Antecedentes Penales' ||
+                      selected === 'Forma I-9' ||
+                      selected === 'Forma W-4' ||
+                      selected === 'Forma PR-SD/NH-1'
+                    ) {
+                      setBusinessRule('custom');
+                    } else {
+                      setBusinessRule('none');
+                    }
+                  }}
+                  required
+                  style={{ paddingLeft: '2.5rem', width: '100%' }}
+                >
+                  {DOCUMENT_TYPES.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
               </div>
             </div>
 

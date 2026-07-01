@@ -58,6 +58,7 @@ export default function App() {
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         
         const certLogs = logs.filter(l => l.certificateId === cert.id);
+        const docType = cert.documentType || 'Certificado de salud';
         
         // 1. Send warning notification (14 days before expiration or closer)
         if (diffDays <= warningPeriod && diffDays >= 0) {
@@ -67,6 +68,7 @@ export default function App() {
             await logNotification({
               certificateId: cert.id,
               employeeName: cert.employeeName,
+              documentType: docType,
               recipient: 'Manual (WhatsApp/SMS)',
               type: 'warning-14day',
               sentAt: new Date().toISOString(),
@@ -77,7 +79,7 @@ export default function App() {
             // Fire Browser Notification
             triggerBrowserNotification(
               `⚠️ Alerta de Cumplimiento: ${cert.employeeName}`,
-              `El certificado de salud vence el ${cert.expirationDate} (en ${diffDays} días). Por favor, solicite la renovación.`
+              `El documento (${docType}) vence el ${cert.expirationDate} (en ${diffDays} días). Por favor, solicite la renovación.`
             );
             logsCreated = true;
           }
@@ -90,6 +92,7 @@ export default function App() {
             await logNotification({
               certificateId: cert.id,
               employeeName: cert.employeeName,
+              documentType: docType,
               recipient: 'Manual (WhatsApp/SMS)',
               type: 'expired-alert',
               sentAt: new Date().toISOString(),
@@ -99,7 +102,7 @@ export default function App() {
             
             triggerBrowserNotification(
               `☠️ Cumplimiento Crítico: ${cert.employeeName}`,
-              `El certificado de salud venció el ${cert.expirationDate}. Se requiere acción inmediata.`
+              `El documento (${docType}) venció el ${cert.expirationDate}. Se requiere acción inmediata.`
             );
             logsCreated = true;
           }

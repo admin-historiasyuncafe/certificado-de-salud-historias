@@ -26,7 +26,7 @@ export default function Sidebar({ currentView, onViewChange }) {
 
   const menuItems = [
     { id: 'dashboard', label: 'Panel de Control', icon: LayoutDashboard },
-    { id: 'intake', label: 'Subir Certificado', icon: Upload },
+    { id: 'intake', label: 'Subir Documento', icon: Upload },
     { id: 'repository', label: 'Repositorio', icon: Database },
     { id: 'calendar', label: 'Calendario', icon: Calendar },
     { id: 'notifications', label: 'Registro de Alertas', icon: Bell },

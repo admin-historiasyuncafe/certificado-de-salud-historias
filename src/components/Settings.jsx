@@ -131,6 +131,7 @@ export default function Settings({ onDataReset }) {
         {
           id: 'cert_1',
           employeeName: 'Sofía Jiménez',
+          documentType: 'Certificado de salud',
           issueDate: getOffsetDate(-100),
           expirationDate: getOffsetDate(265), // Active (approx 9 months left)
           businessRule: '1year',
@@ -142,6 +143,7 @@ export default function Settings({ onDataReset }) {
         {
           id: 'cert_2',
           employeeName: 'Daniel Martínez',
+          documentType: 'Contrato de empleo',
           issueDate: getOffsetDate(-30),
           expirationDate: getOffsetDate(700), // Active (2 years validity, 1.9 years left)
           businessRule: '2years',
@@ -153,6 +155,7 @@ export default function Settings({ onDataReset }) {
         {
           id: 'cert_3',
           employeeName: 'Elena Rodríguez',
+          documentType: 'Certificado de Buena Conducta',
           issueDate: getOffsetDate(-355),
           expirationDate: getOffsetDate(10), // Expiring Soon (10 days left, within 14d limit)
           businessRule: '1year',
@@ -164,6 +167,7 @@ export default function Settings({ onDataReset }) {
         {
           id: 'cert_4',
           employeeName: 'Marcos Vargas',
+          documentType: 'Certificado de Antecedentes Penales',
           issueDate: getOffsetDate(-380),
           expirationDate: getOffsetDate(-15), // Expired (15 days ago)
           businessRule: '1year',
@@ -175,6 +179,7 @@ export default function Settings({ onDataReset }) {
         {
           id: 'cert_5',
           employeeName: 'Diana Pérez',
+          documentType: 'Identificación (ID)',
           issueDate: getOffsetDate(-200),
           expirationDate: '', // Indefinite rule
           businessRule: 'none',
@@ -183,9 +188,7 @@ export default function Settings({ onDataReset }) {
           imageName: 'diana_perez_declaracion_salud.png',
           imageType: 'image/png'
         }
-      ];
-
-      // Save each certificate
+      ];      // Save each certificate
       for (const cert of mockCerts) {
         await saveCertificate(cert);
       }

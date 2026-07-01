@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { getAllCertificates, deleteCertificate, getNotificationLogs, saveCertificate } from '../services/db';
 import { downloadICSFile } from '../utils/calendar';
+import { DOCUMENT_TYPES } from '../utils/constants';
 
 export default function Repository({ refreshTrigger, onRecordDeleted }) {
   const [certificates, setCertificates] = useState([]);
@@ -26,10 +27,12 @@ export default function Repository({ refreshTrigger, onRecordDeleted }) {
   const [logs, setLogs] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [docTypeFilter, setDocTypeFilter] = useState('all');
   const [selectedCert, setSelectedCert] = useState(null);
   const [certImageUrl, setCertImageUrl] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [editDocType, setEditDocType] = useState('Certificado de salud');
 
   const getReminderText = (employeeName, expirationDate) => {
     const defaultTpl = 'Hola [Nombre], te recordamos que debes actualizar tu Certificado de Salud que vence el [fecha]. ¡Gracias!';
@@ -79,7 +82,7 @@ export default function Repository({ refreshTrigger, onRecordDeleted }) {
 
   useEffect(() => {
     filterData();
-  }, [certificates, searchQuery, statusFilter]);
+  }, [certificates, searchQuery, statusFilter, docTypeFilter]);
 
   // Auto-calculate expiration in edit mode
   useEffect(() => {
@@ -120,6 +123,11 @@ export default function Repository({ refreshTrigger, onRecordDeleted }) {
     // Status filter
     if (statusFilter !== 'all') {
       result = result.filter(c => c.status === statusFilter);
+    }
+
+    // Document type filter
+    if (docTypeFilter !== 'all') {
+      result = result.filter(c => (c.documentType || 'Certificado de salud') === docTypeFilter);
     }
 
     // Sort by expiration date: expired first, then expiring soon, then active, then indefinite
@@ -173,6 +181,7 @@ export default function Repository({ refreshTrigger, onRecordDeleted }) {
   const startEditing = () => {
     if (!selectedCert) return;
     setEditName(selectedCert.employeeName || '');
+    setEditDocType(selectedCert.documentType || 'Certificado de salud');
     setEditDept(selectedCert.department || '');
     setEditIssueDate(selectedCert.issueDate || '');
     setEditRule(selectedCert.businessRule || '1year');
@@ -195,6 +204,7 @@ export default function Repository({ refreshTrigger, onRecordDeleted }) {
       const updatedCert = {
         ...selectedCert,
         employeeName: editName.trim(),
+        documentType: editDocType,
         department: editDept.trim(),
         issueDate: editIssueDate,
         businessRule: editRule,
@@ -243,13 +253,13 @@ export default function Repository({ refreshTrigger, onRecordDeleted }) {
   return (
     <div className="repository-container animate-fade-in">
       <div className="view-header">
-        <h2 className="view-title">Repositorio de Certificados</h2>
+        <h2 className="view-title">Repositorio de Documentos</h2>
         <p className="view-subtitle">Busque, verifique el cumplimiento, descargue recordatorios y vea los registros de todo el personal.</p>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="glass-card control-bar">
-        <div className="search-box">
+      <div className="glass-card control-bar" style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
+        <div className="search-box" style={{ flex: '2 1 300px' }}>
           <Search size={18} className="search-icon" />
           <input
             type="text"
@@ -260,7 +270,7 @@ export default function Repository({ refreshTrigger, onRecordDeleted }) {
           />
         </div>
 
-        <div className="filter-box">
+        <div className="filter-box" style={{ flex: '1 1 200px' }}>
           <Filter size={18} className="filter-icon" />
           <select
             className="filter-select"
@@ -271,6 +281,20 @@ export default function Repository({ refreshTrigger, onRecordDeleted }) {
             <option value="active">Cumplimiento Activo</option>
             <option value="expiring">Vence Pronto (Advertencia)</option>
             <option value="expired">Vencido (Atención Urgente)</option>
+          </select>
+        </div>
+
+        <div className="filter-box" style={{ flex: '1 1 200px' }}>
+          <Filter size={18} className="filter-icon" />
+          <select
+            className="filter-select"
+            value={docTypeFilter}
+            onChange={(e) => setDocTypeFilter(e.target.value)}
+          >
+            <option value="all">Todos los Documentos</option>
+            {DOCUMENT_TYPES.map(type => (
+              <option key={type} value={type}>{type}</option>
+            ))}
           </select>
         </div>
       </div>
@@ -285,7 +309,7 @@ export default function Repository({ refreshTrigger, onRecordDeleted }) {
         <div className="glass-card empty-repo-state">
           <FileText size={64} className="empty-icon" />
           <h3>No se Encontraron Registros</h3>
-          <p>Intente ajustar los criterios de búsqueda, las opciones de filtro o suba un nuevo certificado para comenzar el seguimiento.</p>
+          <p>Intente ajustar los criterios de búsqueda, las opciones de filtro o suba un nuevo documento para comenzar el seguimiento.</p>
         </div>
       ) : (
         <div className="certs-grid">
@@ -298,6 +322,9 @@ export default function Repository({ refreshTrigger, onRecordDeleted }) {
               <div className="cert-card-header">
                 <div>
                   <h3 className="cert-emp-name">{cert.employeeName}</h3>
+                  <span className="cert-doc-type" style={{ fontSize: '0.8rem', color: 'hsl(var(--accent-cyan))', fontWeight: '600', display: 'block', marginTop: '0.2rem' }}>
+                    {cert.documentType || 'Certificado de salud'}
+                  </span>
                   <span className="cert-id-tag">ID: {cert.id}</span>
                 </div>
                 <span className={`badge badge-${cert.status}`}>
@@ -341,7 +368,7 @@ export default function Repository({ refreshTrigger, onRecordDeleted }) {
                 <button 
                   className="icon-btn btn-danger-text" 
                   onClick={(e) => handleDelete(cert.id, e)} 
-                  title="Eliminar Certificado"
+                  title="Eliminar Documento"
                 >
                   <Trash2 size={16} />
                 </button>
@@ -385,13 +412,12 @@ export default function Repository({ refreshTrigger, onRecordDeleted }) {
                   )}
                 </div>
               )}
-
               {/* Right Column: Metadata details & Log logs */}
               <div className="modal-metadata-section">
                 {isEditing ? (
                   <form onSubmit={saveEdit} className="meta-card form-panel" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', border: 'none', background: 'transparent', padding: 0 }}>
                     <h3>Editar Información</h3>
-                    
+
                     <div className="form-group">
                       <label className="form-label">Nombre del Empleado *</label>
                       <input 
@@ -401,6 +427,20 @@ export default function Repository({ refreshTrigger, onRecordDeleted }) {
                         onChange={e => setEditName(e.target.value)} 
                         required 
                       />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Tipo de Documento *</label>
+                      <select 
+                        className="form-input" 
+                        value={editDocType} 
+                        onChange={e => setEditDocType(e.target.value)}
+                        required
+                      >
+                        {DOCUMENT_TYPES.map(type => (
+                          <option key={type} value={type}>{type}</option>
+                        ))}
+                      </select>
                     </div>
 
                     <div className="form-group">
@@ -520,11 +560,18 @@ export default function Repository({ refreshTrigger, onRecordDeleted }) {
                   <>
                     <div className="meta-card">
                       <h3>Resumen de Cumplimiento</h3>
-                      
+
                       <div className="meta-detail-row">
                         <span className="meta-label">Estado</span>
                         <span className={`badge badge-${selectedCert.status}`}>
                           {selectedCert.status === 'active' ? 'Activo' : selectedCert.status === 'expiring' ? 'Vence Pronto' : 'Vencido'}
+                        </span>
+                      </div>
+
+                      <div className="meta-detail-row">
+                        <span className="meta-label">Tipo de Documento</span>
+                        <span className="meta-value" style={{ color: 'hsl(var(--accent-cyan))', fontWeight: '600' }}>
+                          {selectedCert.documentType || 'Certificado de salud'}
                         </span>
                       </div>
 
