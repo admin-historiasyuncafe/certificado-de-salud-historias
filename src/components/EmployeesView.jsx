@@ -11,7 +11,8 @@ import {
   ShieldAlert,
   ArrowRight,
   TrendingUp,
-  Award
+  Award,
+  X
 } from 'lucide-react';
 import { getAllCertificates } from '../services/db';
 import { DOCUMENT_TYPES } from '../utils/constants';
@@ -55,11 +56,15 @@ export default function EmployeesView({ refreshTrigger, onUploadMissingDoc }) {
     }
     employeesMap[name].documents.push(cert);
   });
-
   const employeesList = Object.values(employeesMap).map(emp => {
-    // Check which of the 15 required documents are uploaded
+    const isKitchen = (emp.department || '').toLowerCase().includes('cocina');
+    const requiredDocs = isKitchen 
+      ? DOCUMENT_TYPES 
+      : DOCUMENT_TYPES.filter(type => type !== 'Certificado de ServSafe');
+
+    // Check which of the required documents are uploaded
     const uploadedTypes = new Set(emp.documents.map(d => d.documentType || 'Certificado de salud'));
-    const complianceCount = DOCUMENT_TYPES.filter(type => uploadedTypes.has(type)).length;
+    const complianceCount = requiredDocs.filter(type => uploadedTypes.has(type)).length;
     
     // Check if any uploaded document is expired or expiring
     let status = 'active';
@@ -72,11 +77,10 @@ export default function EmployeesView({ refreshTrigger, onUploadMissingDoc }) {
     return {
       ...emp,
       complianceCount,
-      totalCount: DOCUMENT_TYPES.length,
+      totalCount: requiredDocs.length,
       status
     };
   });
-
   // Filters based on search query
   const filteredEmployees = employeesList.filter(emp => 
     emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -93,16 +97,21 @@ export default function EmployeesView({ refreshTrigger, onUploadMissingDoc }) {
 
   const selectedEmployee = selectedEmployeeName ? employeesMap[selectedEmployeeName] : null;
 
-  // Get breakdown of all 15 document types for the selected employee
+  // Get breakdown of required document types for the selected employee
   const getSelectedEmployeeBreakdown = () => {
     if (!selectedEmployee) return [];
     
+    const isKitchen = (selectedEmployee.department || '').toLowerCase().includes('cocina');
+    const requiredDocs = isKitchen 
+      ? DOCUMENT_TYPES 
+      : DOCUMENT_TYPES.filter(type => type !== 'Certificado de ServSafe');
+
     const docsMap = {};
     selectedEmployee.documents.forEach(d => {
       docsMap[d.documentType || 'Certificado de salud'] = d;
     });
 
-    return DOCUMENT_TYPES.map(type => {
+    return requiredDocs.map(type => {
       const doc = docsMap[type];
       return {
         type,
@@ -181,7 +190,7 @@ export default function EmployeesView({ refreshTrigger, onUploadMissingDoc }) {
           <p>Analizando expedientes de cumplimiento...</p>
         </div>
       ) : (
-        <div className="employees-layout">
+        <div className={`employees-layout ${selectedEmployeeName ? 'has-selected' : ''}`}>
           {/* Panel Izquierdo: Lista de Empleados */}
           <div className="employees-list-panel">
             {filteredEmployees.length === 0 ? (
@@ -246,10 +255,17 @@ export default function EmployeesView({ refreshTrigger, onUploadMissingDoc }) {
                     <h3 className="detail-title">{selectedEmployee.name}</h3>
                     <p className="detail-subtitle">Departamento: {selectedEmployee.department}</p>
                   </div>
-                  <div className="detail-badge-group">
+                  <div className="detail-badge-group" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <span className="badge badge-secondary">
                       {Math.round((selectedEmployee.documents.length / DOCUMENT_TYPES.length) * 100)}% Completado
                     </span>
+                    <button 
+                      className="close-detail-btn"
+                      onClick={() => setSelectedEmployeeName(null)}
+                      aria-label="Cerrar detalle"
+                    >
+                      <X size={20} />
+                    </button>
                   </div>
                 </div>
 
@@ -706,13 +722,50 @@ export default function EmployeesView({ refreshTrigger, onUploadMissingDoc }) {
           to { transform: rotate(360deg); }
         }
 
+        .close-detail-btn {
+          background: transparent;
+          border: none;
+          color: hsl(var(--text-secondary));
+          cursor: pointer;
+          padding: 0.5rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          transition: var(--transition-smooth);
+        }
+        .close-detail-btn:hover {
+          background: hsl(var(--card-border) / 0.4);
+          color: #fff;
+        }
+
         @media (max-width: 900px) {
           .employees-layout {
             grid-template-columns: 1fr;
           }
 
           .employee-detail-panel {
-            position: static;
+            display: none;
+          }
+
+          .employees-layout.has-selected .employee-detail-panel {
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1000;
+            background: hsl(var(--bg-primary));
+            padding: 1.5rem;
+            overflow-y: auto;
+          }
+
+          .employees-layout.has-selected .detail-card {
+            border: none;
+            background: transparent;
+            padding: 0;
+            box-shadow: none;
           }
         }
       `}</style>

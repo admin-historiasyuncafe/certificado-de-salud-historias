@@ -13,5 +13,6 @@ export const DOCUMENT_TYPES = [
   'Credo, cultura y valores (documento firmado)',
   'Forma I-9',
   'Forma W-4',
-  'Forma PR-SD/NH-1'
+  'Forma PR-SD/NH-1',
+  'Certificado de ServSafe'
 ];
