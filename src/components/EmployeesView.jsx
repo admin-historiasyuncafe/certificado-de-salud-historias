@@ -58,7 +58,7 @@ export default function EmployeesView({ refreshTrigger, onUploadMissingDoc }) {
 
   const employeesList = Object.values(employeesMap).map(emp => {
     // Check which of the 15 required documents are uploaded
-    const uploadedTypes = new Set(emp.documents.map(d => d.documentType));
+    const uploadedTypes = new Set(emp.documents.map(d => d.documentType || 'Certificado de salud'));
     const complianceCount = DOCUMENT_TYPES.filter(type => uploadedTypes.has(type)).length;
     
     // Check if any uploaded document is expired or expiring
@@ -99,7 +99,7 @@ export default function EmployeesView({ refreshTrigger, onUploadMissingDoc }) {
     
     const docsMap = {};
     selectedEmployee.documents.forEach(d => {
-      docsMap[d.documentType] = d;
+      docsMap[d.documentType || 'Certificado de salud'] = d;
     });
 
     return DOCUMENT_TYPES.map(type => {
