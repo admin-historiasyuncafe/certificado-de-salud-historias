@@ -63,6 +63,7 @@ export default function Repository({ refreshTrigger, onRecordDeleted }) {
 
   // Modal Dialog reference
   const dialogRef = useRef(null);
+  const isClosingRef = useRef(false);
 
   useEffect(() => {
     const handlePopState = (e) => {
@@ -141,6 +142,7 @@ export default function Repository({ refreshTrigger, onRecordDeleted }) {
   };
 
   const openDetails = (cert) => {
+    isClosingRef.current = false;
     setSelectedCert(cert);
     // Revoke any previous object URL to avoid memory leaks
     if (certImageUrl && certImageUrl.startsWith('blob:')) {
@@ -162,7 +164,10 @@ export default function Repository({ refreshTrigger, onRecordDeleted }) {
   };
 
   const closeDetails = (isPopState = false) => {
-    if (dialogRef.current) {
+    if (isClosingRef.current) return;
+    isClosingRef.current = true;
+
+    if (dialogRef.current && dialogRef.current.open) {
       dialogRef.current.close();
     }
     setSelectedCert(null);
