@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Users, 
   Search, 
@@ -22,6 +22,43 @@ export default function EmployeesView({ refreshTrigger, onUploadMissingDoc }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEmployeeName, setSelectedEmployeeName] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const [previewCert, setPreviewCert] = useState(null);
+  const [previewImageUrl, setPreviewImageUrl] = useState('');
+  const previewDialogRef = useRef(null);
+  const isClosingPreviewRef = useRef(false);
+
+  const openPreview = (cert) => {
+    isClosingPreviewRef.current = false;
+    setPreviewCert(cert);
+    if (previewImageUrl && previewImageUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(previewImageUrl);
+    }
+    if (cert.imageBlob) {
+      setPreviewImageUrl(URL.createObjectURL(cert.imageBlob));
+    } else if (cert.imageUrl) {
+      setPreviewImageUrl(cert.imageUrl);
+    } else {
+      setPreviewImageUrl('');
+    }
+    if (previewDialogRef.current) {
+      previewDialogRef.current.showModal();
+    }
+  };
+
+  const closePreview = () => {
+    if (isClosingPreviewRef.current) return;
+    isClosingPreviewRef.current = true;
+
+    if (previewDialogRef.current && previewDialogRef.current.open) {
+      previewDialogRef.current.close();
+    }
+    setPreviewCert(null);
+    if (previewImageUrl && previewImageUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(previewImageUrl);
+    }
+    setPreviewImageUrl('');
+  };
 
   useEffect(() => {
     async function loadData() {
@@ -294,6 +331,14 @@ export default function EmployeesView({ refreshTrigger, onUploadMissingDoc }) {
                               <span className={`badge badge-${item.status}`}>
                                 {item.status === 'active' ? 'Vigente' : item.status === 'expiring' ? 'Vence pronto' : 'Vencido'}
                               </span>
+                              <button
+                                className="icon-btn"
+                                onClick={() => openPreview(item.document)}
+                                title="Ver Documento"
+                                style={{ padding: '0.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                              >
+                                <Eye size={16} />
+                              </button>
                             </div>
                           ) : (
                             <button 
@@ -324,6 +369,25 @@ export default function EmployeesView({ refreshTrigger, onUploadMissingDoc }) {
       )}
 
       <style>{`
+        .icon-btn {
+          background: hsl(var(--bg-tertiary));
+          border: 1px solid hsl(var(--card-border));
+          color: hsl(var(--text-secondary));
+          width: 32px;
+          height: 32px;
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: var(--transition-smooth);
+        }
+        .icon-btn:hover {
+          color: #fff;
+          border-color: hsl(var(--accent-cyan));
+          background: hsl(var(--accent-cyan) / 0.1);
+        }
+
         .employees-view-container {
           max-width: 1200px;
           margin: 0 auto;
@@ -769,6 +833,42 @@ export default function EmployeesView({ refreshTrigger, onUploadMissingDoc }) {
           }
         }
       `}</style>
+
+      {/* Detalle del Documento Modal */}
+      <dialog ref={previewDialogRef} className="cert-dialog-modal" onClose={closePreview}>
+        {previewCert && (
+          <div className="modal-content-wrapper" style={{ height: 'min(92vh, 700px)' }}>
+            <div className="modal-header">
+              <div>
+                <h2>{previewCert.employeeName}</h2>
+                <p className="modal-subtitle">{previewCert.documentType || 'Certificado de salud'} - ID: {previewCert.id}</p>
+              </div>
+              <button className="close-modal-btn" onClick={closePreview} aria-label="Cerrar Vista Previa">
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="modal-body-grid" style={{ gridTemplateColumns: '1fr', height: '100%' }}>
+              <div className="modal-document-viewer" style={{ borderRight: 'none', height: '100%', minHeight: '350px' }}>
+                {previewCert.imageType === 'application/pdf' ? (
+                  <div className="pdf-viewer-placeholder">
+                    <FileText size={100} className="pdf-modal-icon" />
+                    <h4>Documento PDF</h4>
+                    <p>{previewCert.imageName}</p>
+                    <a href={previewImageUrl} download={previewCert.imageName} className="btn btn-secondary mt-4">
+                      Descargar PDF
+                    </a>
+                  </div>
+                ) : previewImageUrl ? (
+                  <img src={previewImageUrl} alt="Escaneo del documento" className="modal-image-display" style={{ maxHeight: '450px' }} />
+                ) : (
+                  <div className="no-image-placeholder">No se adjuntó ningún archivo de documento.</div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </dialog>
     </div>
   );
 }
