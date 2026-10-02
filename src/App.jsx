@@ -7,10 +7,28 @@ import CalendarView from './components/CalendarView';
 import NotificationsLog from './components/NotificationsLog';
 import Settings from './components/Settings';
 import EmployeesView from './components/EmployeesView';
-import { getAllCertificates, logNotification, getNotificationLogs } from './services/db';export default function App() {
+import NewEmployeeView from './components/NewEmployeeView';
+import { getAllCertificates, logNotification, getNotificationLogs } from './services/db';
+
+export default function App() {
   const [currentView, setCurrentView] = useState('dashboard');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [intakePreload, setIntakePreload] = useState(null);
+  
+  // Theme state: 'dark' | 'light'
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('docu_theme') || 'dark';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('docu_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
+
   // Request browser notification permissions on mount
   useEffect(() => {
     if ("Notification" in window && Notification.permission === "default") {
@@ -135,6 +153,10 @@ import { getAllCertificates, logNotification, getNotificationLogs } from './serv
             onViewChange={(view) => setCurrentView(view)} 
           />
         );
+      case 'onboarding':
+        return (
+          <NewEmployeeView />
+        );
       case 'intake':
         return (
           <Intake 
@@ -177,6 +199,8 @@ import { getAllCertificates, logNotification, getNotificationLogs } from './serv
         return (
           <Settings 
             onDataReset={handleSyncRefresh} 
+            theme={theme}
+            onToggleTheme={toggleTheme}
           />
         );
       default:
@@ -194,6 +218,8 @@ import { getAllCertificates, logNotification, getNotificationLogs } from './serv
       <Sidebar 
         currentView={currentView} 
         onViewChange={(view) => setCurrentView(view)} 
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
       <main className="main-content">
         {renderView()}

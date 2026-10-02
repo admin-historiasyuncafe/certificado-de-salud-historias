@@ -69,7 +69,7 @@ function base64ToBlob(base64DataUrl) {
 }
 
 const DB_NAME = 'HealthCertificatesDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 export function openDatabase() {
   return new Promise((resolve, reject) => {
@@ -100,6 +100,13 @@ export function openDatabase() {
         const logStore = db.createObjectStore('notifications', { keyPath: 'id', autoIncrement: true });
         logStore.createIndex('certificateId', 'certificateId', { unique: false });
         logStore.createIndex('sentAt', 'sentAt', { unique: false });
+      }
+
+      // Object store for new payroll employees
+      if (!db.objectStoreNames.contains('payroll_employees')) {
+        const payrollStore = db.createObjectStore('payroll_employees', { keyPath: 'id' });
+        payrollStore.createIndex('fullName', 'fullName', { unique: false });
+        payrollStore.createIndex('createdAt', 'createdAt', { unique: false });
       }
     };
   });
@@ -571,4 +578,154 @@ export async function deleteNotificationLog(id) {
 
   return true;
 }
+
+// ── Payroll Employees (Ingreso de Empleados para Nómina) ───────────
+
+export async function getAllPayrollEmployees() {
+  // 1. Try Firestore if configured
+  if (isFirebaseConfigured()) {
+    try {
+      const db = getFirestoreDb();
+      const col = collection(db, 'payroll_employees');
+      const snapshot = await withTimeout(getDocs(col), 8000, 'Firestore payroll fetch timeout');
+      const employees = [];
+      snapshot.forEach(docSnap => {
+        employees.push(docSnap.data());
+      });
+      employees.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+      // Cache locally in localStorage
+      try {
+        localStorage.setItem('payroll_employees_cache', JSON.stringify(employees));
+      } catch (e) {}
+
+      return employees;
+    } catch (err) {
+      console.warn('Firestore payroll read failed, falling back to local storage:', err.message);
+    }
+  }
+
+  // 2. Try IndexedDB
+  try {
+    const db = await openDatabase();
+    if (db.objectStoreNames.contains('payroll_employees')) {
+      const employees = await new Promise((resolve, reject) => {
+        const transaction = db.transaction('payroll_employees', 'readonly');
+        const store = transaction.objectStore('payroll_employees');
+        const request = store.getAll();
+        request.onsuccess = () => resolve(request.result || []);
+        request.onerror = () => reject(request.error);
+      });
+      employees.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+      return employees;
+    }
+  } catch (err) {
+    console.warn('IndexedDB payroll read failed, using localStorage fallback:', err);
+  }
+
+  // 3. Fallback to localStorage
+  try {
+    const cached = localStorage.getItem('payroll_employees_cache');
+    if (cached) {
+      return JSON.parse(cached);
+    }
+  } catch (e) {}
+
+  return [];
+}
+
+export async function savePayrollEmployee(employeeData) {
+  const id = employeeData.id || ('payroll_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6));
+  const record = {
+    ...employeeData,
+    id,
+    updatedAt: new Date().toISOString(),
+    createdAt: employeeData.createdAt || new Date().toISOString()
+  };
+
+  // 1. Save locally in localStorage cache
+  try {
+    const cached = localStorage.getItem('payroll_employees_cache');
+    let list = cached ? JSON.parse(cached) : [];
+    const idx = list.findIndex(e => e.id === id);
+    if (idx >= 0) {
+      list[idx] = record;
+    } else {
+      list.unshift(record);
+    }
+    localStorage.setItem('payroll_employees_cache', JSON.stringify(list));
+  } catch (e) {
+    console.warn('Failed to update localStorage payroll cache:', e);
+  }
+
+  // 2. Save in IndexedDB
+  try {
+    const localDb = await openDatabase();
+    if (localDb.objectStoreNames.contains('payroll_employees')) {
+      await new Promise((resolve, reject) => {
+        const transaction = localDb.transaction('payroll_employees', 'readwrite');
+        const store = transaction.objectStore('payroll_employees');
+        const request = store.put(record);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+  } catch (err) {
+    console.warn('IndexedDB payroll save warning:', err);
+  }
+
+  // 3. Sync to Firestore if configured
+  if (isFirebaseConfigured()) {
+    try {
+      const db = getFirestoreDb();
+      const docRef = doc(db, 'payroll_employees', id);
+      await withTimeout(setDoc(docRef, record), 10000, 'Firestore payroll save timeout');
+    } catch (err) {
+      console.warn('Firestore payroll save warning:', err.message);
+    }
+  }
+
+  return record;
+}
+
+export async function deletePayrollEmployee(id) {
+  // 1. Delete from localStorage
+  try {
+    const cached = localStorage.getItem('payroll_employees_cache');
+    if (cached) {
+      const list = JSON.parse(cached).filter(e => e.id !== id);
+      localStorage.setItem('payroll_employees_cache', JSON.stringify(list));
+    }
+  } catch (e) {}
+
+  // 2. Delete from IndexedDB
+  try {
+    const localDb = await openDatabase();
+    if (localDb.objectStoreNames.contains('payroll_employees')) {
+      await new Promise((resolve, reject) => {
+        const transaction = localDb.transaction('payroll_employees', 'readwrite');
+        const store = transaction.objectStore('payroll_employees');
+        const request = store.delete(id);
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      });
+    }
+  } catch (err) {
+    console.warn('IndexedDB payroll delete warning:', err);
+  }
+
+  // 3. Delete from Firestore
+  if (isFirebaseConfigured()) {
+    try {
+      const db = getFirestoreDb();
+      const docRef = doc(db, 'payroll_employees', id);
+      await withTimeout(deleteDoc(docRef), 8000, 'Firestore payroll delete timeout');
+    } catch (err) {
+      console.warn('Firestore payroll delete warning:', err.message);
+    }
+  }
+
+  return true;
+}
+
 

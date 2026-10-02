@@ -1,13 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, ShieldCheck, Database, Trash2, Save, Cloud, CloudOff, RefreshCw, CheckCircle, XCircle, Loader } from 'lucide-react';
+import { 
+  Calendar, 
+  ShieldCheck, 
+  Database, 
+  Trash2, 
+  Save, 
+  Cloud, 
+  CloudOff, 
+  RefreshCw, 
+  CheckCircle, 
+  XCircle, 
+  Loader,
+  Sun,
+  Moon,
+  Phone,
+  UserPlus
+} from 'lucide-react';
 import { saveCertificate, logNotification, getAllCertificates, deleteCertificate } from '../services/db';
 import { isFirebaseConfigured, getFirebaseConnectionError, setFirebaseConnectionError, getFirestoreDb } from '../services/firebase';
 import { collection, getDocs, query, limit } from 'firebase/firestore';
 
-export default function Settings({ onDataReset }) {
+export default function Settings({ onDataReset, theme = 'dark', onToggleTheme }) {
   const [validity, setValidity] = useState('1year');
   const [warningPeriod, setWarningPeriod] = useState(14);
   const [template, setTemplate] = useState('Hola [Nombre], te recordamos que debes actualizar tu Certificado de Salud que vence el [fecha]. ¡Gracias!');
+  const [aidaPhone, setAidaPhone] = useState('');
   const [statusMessage, setStatusMessage] = useState({ text: '', type: '' });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -22,6 +39,7 @@ export default function Settings({ onDataReset }) {
     setValidity(localStorage.getItem('default_validity') || '1year');
     setWarningPeriod(parseInt(localStorage.getItem('warning_period') || '14', 10));
     setTemplate(localStorage.getItem('notification_template') || 'Hola [Nombre], te recordamos que debes actualizar tu Certificado de Salud que vence el [fecha]. ¡Gracias!');
+    setAidaPhone(localStorage.getItem('aida_whatsapp_phone') || '');
 
     // Load Firebase Config
     const localConfig = localStorage.getItem('firebase_config');
@@ -94,6 +112,7 @@ export default function Settings({ onDataReset }) {
     localStorage.setItem('default_validity', validity);
     localStorage.setItem('warning_period', warningPeriod.toString());
     localStorage.setItem('notification_template', template);
+    localStorage.setItem('aida_whatsapp_phone', aidaPhone.trim());
     setStatusMessage({ text: '¡Configuración guardada con éxito!', type: 'success' });
     setTimeout(() => setStatusMessage({ text: '', type: '' }), 3000);
   };
@@ -362,11 +381,67 @@ export default function Settings({ onDataReset }) {
               </span>
             </div>
 
-            <button type="submit" className="btn btn-primary">
+            <div className="form-group" style={{ marginTop: '1rem' }}>
+              <label className="form-label" htmlFor="aida-phone-setting">
+                Número de WhatsApp de Aida (Recepción de Nómina)
+              </label>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <Phone size={16} style={{ position: 'absolute', left: '0.9rem', color: 'hsl(var(--text-muted))', pointerEvents: 'none' }} />
+                <input 
+                  id="aida-phone-setting"
+                  type="tel" 
+                  className="form-input" 
+                  style={{ paddingLeft: '2.5rem' }}
+                  placeholder="Ej: 787-123-4567 o 17871234567"
+                  value={aidaPhone}
+                  onChange={(e) => setAidaPhone(e.target.value)}
+                />
+              </div>
+              <span style={{ fontSize: '0.78rem', color: 'hsl(var(--text-muted))', marginTop: '0.25rem', display: 'block' }}>
+                A este número se enviarán las fichas completas de los empleados desde la sección <strong>Nuevo Empleado</strong>.
+              </span>
+            </div>
+
+            <button type="submit" className="btn btn-primary" style={{ marginTop: '0.5rem' }}>
               <Save size={18} />
-              Guardar Reglas del Sistema
+              Guardar Reglas y Contacto
             </button>
           </form>
+        </section>
+
+        {/* Apariencia Visual (Claro / Dark Mode) */}
+        <section className="glass-card settings-card">
+          <div className="card-header-icon">
+            {theme === 'dark' ? <Moon className="cyan-glow-icon" size={24} /> : <Sun className="cyan-glow-icon" size={24} />}
+            <h3>Apariencia y Modo Visual</h3>
+          </div>
+          <p className="settings-description">
+            Elige el modo visual que mejor se adapte a tu comodidad. Ambos modos están adaptados a la estética de <em>Historias y un Café</em>.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1.25rem' }}>
+            <button
+              type="button"
+              onClick={() => { if (theme !== 'dark') onToggleTheme && onToggleTheme(); }}
+              className={`btn ${theme === 'dark' ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ padding: '0.9rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem' }}
+            >
+              <Moon size={18} />
+              <span>Modo Oscuro</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { if (theme !== 'light') onToggleTheme && onToggleTheme(); }}
+              className={`btn ${theme === 'light' ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ padding: '0.9rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem' }}
+            >
+              <Sun size={18} />
+              <span>Modo Claro</span>
+            </button>
+          </div>
+          <div style={{ marginTop: '1rem', fontSize: '0.82rem', color: 'hsl(var(--text-muted))', textAlign: 'center' }}>
+            Tema activo: <strong style={{ color: 'hsl(var(--accent-cyan))' }}>{theme === 'dark' ? 'Oscuro (Dark Mode)' : 'Claro (Light Mode)'}</strong>
+          </div>
         </section>
 
         {/* Sincronización con Firebase */}

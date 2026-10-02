@@ -34,6 +34,47 @@
   --glass-blur: blur(12px);
 }
 
+/* Light Theme Variables */
+[data-theme="light"] {
+  --bg-primary: 220 20% 96%;        /* Fondo suave y limpio */
+  --bg-secondary: 0 0% 100%;        /* Blanco para sidebar y tarjetas */
+  --bg-tertiary: 220 18% 92%;       /* Gris suave para inputs y fondos neutros */
+  
+  --card-bg: 0 0% 100% / 0.94;
+  --card-border: 220 15% 85% / 0.85;
+  
+  --text-primary: 220 25% 14%;      /* Carbón oscuro nítido */
+  --text-secondary: 220 14% 38%;    /* Gris carbón medio */
+  --text-muted: 220 10% 55%;        /* Gris suave */
+  
+  --accent-cyan: 182 95% 24%;       /* Teal profundo con excelente contraste */
+  --accent-cyan-glow: 182 95% 24% / 0.12;
+  --accent-cyan-dim: 182 95% 18%;
+  
+  --status-active: 168 55% 30%;     /* Verde esmeralda rico */
+  --status-active-glow: 168 55% 30% / 0.12;
+  
+  --status-warning: 34 85% 34%;     /* Ámbar / Café dorado */
+  --status-warning-glow: 34 85% 34% / 0.12;
+  
+  --status-expired: 354 75% 44%;    /* Carmín legible */
+  --status-expired-glow: 354 75% 44% / 0.12;
+
+  --shadow-glow: 0 8px 30px 0 rgba(15, 23, 42, 0.08);
+}
+
+[data-theme="light"] .cert-dialog-modal::backdrop {
+  background: rgba(15, 23, 42, 0.45);
+}
+
+[data-theme="light"] .cert-dialog-modal {
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.2), 0 0 0 1px hsl(var(--card-border));
+}
+
+[data-theme="light"] .glass-card:hover {
+  box-shadow: 0 12px 35px 0 rgba(6, 131, 136, 0.12);
+}
+
 /* Reset and Base Styles */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -89,7 +130,7 @@ html, body {
   flex-direction: column;
   height: 100vh;
   overflow-y: auto;
-  background-radial-gradient: radial-gradient(circle at 50% 50%, hsl(var(--bg-secondary)) 0%, hsl(var(--bg-primary)) 100%);
+  background: radial-gradient(circle at 50% 50%, hsl(var(--bg-secondary)) 0%, hsl(var(--bg-primary)) 100%);
   padding: 2.5rem;
 }
 
@@ -137,7 +178,7 @@ h1, h2, h3, h4 {
 
 .btn-primary {
   background: linear-gradient(135deg, hsl(var(--accent-cyan)), hsl(var(--accent-cyan-dim)));
-  color: hsl(var(--bg-primary));
+  color: #ffffff;
   box-shadow: 0 0 15px hsl(var(--accent-cyan) / 0.3);
 }
 .btn-primary:hover {
@@ -327,7 +368,7 @@ h1, h2, h3, h4 {
 .modal-header h2 {
   font-size: 1.35rem;
   font-weight: 700;
-  color: #fff;
+  color: hsl(var(--text-primary));
   line-height: 1.2;
 }
 

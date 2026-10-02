@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { 
   LayoutDashboard, 
+  UserPlus,
   Upload, 
   Database, 
   Calendar, 
@@ -8,7 +9,9 @@ import {
   Settings, 
   Menu, 
   X,
-  Users
+  Users,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 const LogoIcon = ({ className, size = 24 }) => (
@@ -22,11 +25,12 @@ const LogoIcon = ({ className, size = 24 }) => (
   />
 );
 
-export default function Sidebar({ currentView, onViewChange }) {
+export default function Sidebar({ currentView, onViewChange, theme = 'dark', onToggleTheme }) {
   const [isOpen, setIsOpen] = useState(false);
 
   const menuItems = [
     { id: 'dashboard', label: 'Panel de Control', icon: LayoutDashboard },
+    { id: 'onboarding', label: 'Nuevo Empleado', icon: UserPlus },
     { id: 'intake', label: 'Subir Documento', icon: Upload },
     { id: 'repository', label: 'Repositorio', icon: Database },
     { id: 'employees', label: 'Expedientes', icon: Users },
@@ -52,9 +56,22 @@ export default function Sidebar({ currentView, onViewChange }) {
           <LogoIcon className="logo-icon animate-pulse" size={28} />
           <span className="logo-text">docuHistorias</span>
         </div>
-        <button className="mobile-toggle" onClick={toggleMobileMenu} aria-label="Toggle Menu">
-          {isOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          {onToggleTheme && (
+            <button 
+              className="theme-mobile-btn" 
+              onClick={onToggleTheme} 
+              aria-label="Toggle Theme"
+              title={theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}
+            >
+              {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+          )}
+          <button className="mobile-toggle" onClick={toggleMobileMenu} aria-label="Toggle Menu">
+            {isOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
       </header>
 
       {/* Sidebar Container */}
@@ -77,6 +94,9 @@ export default function Sidebar({ currentView, onViewChange }) {
                   >
                     <Icon size={20} className="nav-icon" />
                     <span>{item.label}</span>
+                    {item.id === 'onboarding' && (
+                      <span className="nav-badge-new">NUEVO</span>
+                    )}
                     {isActive && <div className="active-indicator" />}
                   </button>
                 </li>
@@ -85,7 +105,25 @@ export default function Sidebar({ currentView, onViewChange }) {
           </ul>
         </nav>
 
+        {/* Sidebar Footer with Theme Toggle and Admin Profile */}
         <div className="sidebar-footer">
+          {onToggleTheme && (
+            <button 
+              type="button" 
+              className="theme-toggle-bar"
+              onClick={onToggleTheme}
+              title={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+            >
+              <div className="theme-toggle-left">
+                {theme === 'dark' ? <Sun size={17} className="sun-icon" /> : <Moon size={17} className="moon-icon" />}
+                <span>{theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}</span>
+              </div>
+              <span className="theme-pill-status">
+                {theme === 'dark' ? 'Oscuro' : 'Claro'}
+              </span>
+            </button>
+          )}
+
           <div className="user-profile">
             <div className="avatar">AD</div>
             <div className="user-info">
@@ -127,14 +165,13 @@ export default function Sidebar({ currentView, onViewChange }) {
           font-size: 1.35rem;
           font-weight: 800;
           letter-spacing: -0.03em;
-          background: linear-gradient(135deg, #ffffff 0%, hsl(var(--text-secondary)) 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
+          color: hsl(var(--text-primary));
         }
 
         .sidebar-nav {
           flex: 1;
           padding: 1.5rem 1rem;
+          overflow-y: auto;
         }
 
         .sidebar-nav ul {
@@ -151,12 +188,12 @@ export default function Sidebar({ currentView, onViewChange }) {
           color: hsl(var(--text-secondary));
           display: flex;
           align-items: center;
-          gap: 1rem;
-          padding: 0.85rem 1rem;
+          gap: 0.85rem;
+          padding: 0.8rem 1rem;
           border-radius: 10px;
           cursor: pointer;
           font-family: var(--font-sans);
-          font-size: 0.95rem;
+          font-size: 0.92rem;
           font-weight: 500;
           text-align: left;
           position: relative;
@@ -169,18 +206,30 @@ export default function Sidebar({ currentView, onViewChange }) {
         }
 
         .nav-link.active {
-          color: hsl(var(--text-primary));
-          background: hsl(var(--accent-cyan) / 0.08);
-          font-weight: 600;
+          color: hsl(var(--accent-cyan));
+          background: hsl(var(--accent-cyan) / 0.1);
+          font-weight: 700;
         }
 
         .nav-icon {
           transition: var(--transition-smooth);
+          flex-shrink: 0;
         }
 
         .nav-link.active .nav-icon {
           color: hsl(var(--accent-cyan));
           filter: drop-shadow(0 0 4px hsl(var(--accent-cyan) / 0.4));
+        }
+
+        .nav-badge-new {
+          margin-left: auto;
+          background: #25D366;
+          color: #ffffff;
+          font-size: 0.65rem;
+          font-weight: 800;
+          padding: 0.15rem 0.45rem;
+          border-radius: 10px;
+          letter-spacing: 0.04em;
         }
 
         .active-indicator {
@@ -195,9 +244,59 @@ export default function Sidebar({ currentView, onViewChange }) {
         }
 
         .sidebar-footer {
-          padding: 1.5rem;
+          padding: 1.25rem 1rem;
           border-top: 1px solid hsl(var(--card-border));
           background-color: hsl(var(--bg-primary) / 0.5);
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        .theme-toggle-bar {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0.6rem 0.85rem;
+          background: hsl(var(--bg-secondary));
+          border: 1px solid hsl(var(--card-border));
+          border-radius: 10px;
+          color: hsl(var(--text-secondary));
+          cursor: pointer;
+          font-size: 0.85rem;
+          font-weight: 600;
+          transition: var(--transition-smooth);
+        }
+
+        .theme-toggle-bar:hover {
+          color: hsl(var(--text-primary));
+          border-color: hsl(var(--accent-cyan) / 0.5);
+          background: hsl(var(--card-border) / 0.2);
+        }
+
+        .theme-toggle-left {
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+        }
+
+        .sun-icon {
+          color: #f59e0b;
+        }
+
+        .moon-icon {
+          color: #6366f1;
+        }
+
+        .theme-pill-status {
+          font-size: 0.72rem;
+          padding: 0.15rem 0.5rem;
+          border-radius: 12px;
+          background: hsl(var(--bg-tertiary));
+          color: hsl(var(--text-muted));
+          text-transform: uppercase;
+          font-weight: 700;
+          letter-spacing: 0.04em;
         }
 
         .user-profile {
@@ -207,17 +306,18 @@ export default function Sidebar({ currentView, onViewChange }) {
         }
 
         .avatar {
-          width: 40px;
-          height: 40px;
+          width: 38px;
+          height: 38px;
           border-radius: 50%;
           background: linear-gradient(135deg, hsl(var(--accent-cyan-dim)), hsl(var(--accent-cyan)));
-          color: hsl(var(--bg-primary));
+          color: #ffffff;
           display: flex;
           align-items: center;
           justify-content: center;
           font-weight: 700;
-          font-size: 0.9rem;
+          font-size: 0.88rem;
           box-shadow: 0 0 10px hsl(var(--accent-cyan) / 0.25);
+          flex-shrink: 0;
         }
 
         .user-info {
@@ -226,7 +326,7 @@ export default function Sidebar({ currentView, onViewChange }) {
 
         .user-name {
           font-weight: 600;
-          font-size: 0.9rem;
+          font-size: 0.88rem;
           color: hsl(var(--text-primary));
           white-space: nowrap;
           overflow: hidden;
@@ -249,11 +349,20 @@ export default function Sidebar({ currentView, onViewChange }) {
           z-index: 101;
         }
 
-        .mobile-toggle {
+        .mobile-toggle, .theme-mobile-btn {
           background: transparent;
           border: none;
           color: hsl(var(--text-primary));
           cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0.4rem;
+          border-radius: 6px;
+        }
+
+        .theme-mobile-btn:hover {
+          background: hsl(var(--card-border) / 0.3);
         }
 
         @keyframes pulse {
@@ -277,7 +386,7 @@ export default function Sidebar({ currentView, onViewChange }) {
             left: -100%;
             height: calc(100vh - 60px);
             width: 100%;
-            background-color: hsl(var(--bg-secondary) / 0.95);
+            background-color: hsl(var(--bg-secondary) / 0.98);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             box-shadow: var(--shadow-glow);
@@ -291,3 +400,4 @@ export default function Sidebar({ currentView, onViewChange }) {
     </>
   );
 }
+
