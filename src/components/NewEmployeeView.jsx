@@ -22,7 +22,6 @@ import {
   Trash2, 
   Edit3, 
   ExternalLink, 
-  Settings as SettingsIcon,
   ShieldCheck,
   CheckCircle2,
   X
@@ -87,9 +86,7 @@ export default function NewEmployeeView() {
   const [statusFeedback, setStatusFeedback] = useState(null);
 
   // Aida's phone number configuration
-  const [aidaPhone, setAidaPhone] = useState(() => localStorage.getItem('aida_whatsapp_phone') || '');
-  const [isEditingAidaPhone, setIsEditingAidaPhone] = useState(false);
-  const [tempAidaPhone, setTempAidaPhone] = useState('');
+  const [aidaPhone] = useState(() => localStorage.getItem('aida_whatsapp_phone') || '');
 
   // View modal for employee details
   const [viewingEmployee, setViewingEmployee] = useState(null);
@@ -157,11 +154,10 @@ export default function NewEmployeeView() {
     const nameStr = formData.fullName.trim() ? ` ${formData.fullName.trim()}` : '';
     const posStr = formData.position.trim() ? `\n• *Puesto asignado:* ${formData.position.trim()}` : '';
     const startStr = formData.startDate ? `\n• *Fecha de Inicio:* ${formData.startDate}` : '';
-    const payStr = formData.hourlyRate ? `\n• *Pago por hora:* $${formData.hourlyRate}` : '';
 
     return `¡Hola${nameStr}! Te damos la bienvenida al equipo de *Historias y un Café* ☕✨.
 
-Para tramitar tu ingreso formal a nómina con Aida, por favor llena y envíanos los siguientes datos por este medio:${posStr}${startStr}${payStr}
+Para tramitar tu ingreso formal a nómina con Aida, por favor llena y envíanos los siguientes datos por este medio:${posStr}${startStr}
 
 📋 *INFORMACIÓN DE EMPLEADO PARA NÓMINA:*
 • *Nombre completo:* ${formData.fullName.trim() || ''}
@@ -176,7 +172,6 @@ Para tramitar tu ingreso formal a nómina con Aida, por favor llena y envíanos 
 • *Nombre del banco:* 
 • *Correo electrónico:* 
 • *Puesto:* ${formData.position.trim() || ''}
-• *Pago por hora $:* ${formData.hourlyRate || ''}
 • *Nota:* 
 
 Por favor envía esta información lo más pronto posible para registrarte en el sistema. ¡Gracias y mucho éxito!`;
@@ -205,7 +200,6 @@ ${data.phone ? `📱 *Teléfono:* ${data.phone}\n` : ''}📅 *Fecha de Inicio:* 
 
 📧 *Correo electrónico:* ${data.email || '—'}
 💼 *Puesto:* ${data.position || '—'}
-💵 *Pago por hora:* ${data.hourlyRate ? `$${data.hourlyRate}` : '—'}
 ${data.notes ? `📝 *Nota:* ${data.notes}\n` : ''}
 _Registrado en docuHistorias_`;
   };
@@ -350,14 +344,6 @@ _Registrado en docuHistorias_`;
     }
   };
 
-  const handleSaveAidaPhone = () => {
-    const clean = tempAidaPhone.trim();
-    localStorage.setItem('aida_whatsapp_phone', clean);
-    setAidaPhone(clean);
-    setIsEditingAidaPhone(false);
-    showFeedback('Número de Aida guardado correctamente.');
-  };
-
   const showFeedback = (msg) => {
     setStatusFeedback(msg);
     setTimeout(() => setStatusFeedback(null), 4000);
@@ -417,66 +403,6 @@ _Registrado en docuHistorias_`;
           <span>{statusFeedback}</span>
         </div>
       )}
-
-      {/* Aida WA Phone Quick Setup Bar */}
-      <div className="glass-card aida-config-banner">
-        <div className="aida-info-left">
-          <div className="aida-avatar">A</div>
-          <div>
-            <div className="aida-label">WhatsApp de Destino para Nómina (Aida)</div>
-            <div className="aida-value">
-              {aidaPhone ? (
-                <span className="phone-tag">
-                  <Phone size={13} /> {aidaPhone}
-                </span>
-              ) : (
-                <span className="phone-empty">Sin número guardado (abrirá selector de contactos de WhatsApp)</span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="aida-actions-right">
-          {isEditingAidaPhone ? (
-            <div className="aida-edit-group">
-              <input 
-                type="tel"
-                placeholder="Ej: 787-123-4567"
-                value={tempAidaPhone}
-                onChange={(e) => setTempAidaPhone(e.target.value)}
-                className="form-input aida-phone-input"
-                autoFocus
-              />
-              <button 
-                type="button" 
-                className="btn btn-primary btn-sm"
-                onClick={handleSaveAidaPhone}
-              >
-                Guardar
-              </button>
-              <button 
-                type="button" 
-                className="btn btn-secondary btn-sm"
-                onClick={() => setIsEditingAidaPhone(false)}
-              >
-                Cancelar
-              </button>
-            </div>
-          ) : (
-            <button 
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={() => {
-                setTempAidaPhone(aidaPhone);
-                setIsEditingAidaPhone(true);
-              }}
-            >
-              <SettingsIcon size={14} />
-              <span>{aidaPhone ? 'Cambiar Teléfono de Aida' : 'Configurar Teléfono de Aida'}</span>
-            </button>
-          )}
-        </div>
-      </div>
 
       {activeTab === 'form' ? (
         <div className="onboarding-form-wrapper">
