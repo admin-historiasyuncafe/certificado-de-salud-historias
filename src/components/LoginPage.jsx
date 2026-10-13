@@ -1,28 +1,40 @@
-import React, { useState } from 'react';
-
-const DEFAULT_PASSWORD_KEY = 'docu_app_password';
-const DEFAULT_PASSWORD     = 'Pabonscosme01!!';
-
-function getStoredPassword() {
-  return localStorage.getItem(DEFAULT_PASSWORD_KEY) || DEFAULT_PASSWORD;
-}
+import React, { useState, useEffect } from 'react';
+import { 
+  verifyAppPassword, 
+  saveAppPassword, 
+  getAppPassword, 
+  subscribeToAppPassword 
+} from '../services/auth';
 
 export default function LoginPage({ onLogin }) {
   // ── Login state ──────────────────────────────────────────────────────────
-  const [password, setPassword]     = useState('');
-  const [showPass, setShowPass]     = useState(false);
-  const [loginError, setLoginError] = useState('');
-  const [shake, setShake]           = useState(false);
+  const [password, setPassword]         = useState('');
+  const [showPass, setShowPass]         = useState(false);
+  const [loginError, setLoginError]     = useState('');
+  const [shake, setShake]               = useState(false);
+  const [isLoggingIn, setIsLoggingIn]   = useState(false);
 
   // ── Change-password state ────────────────────────────────────────────────
-  const [mode, setMode]             = useState('login'); // 'login' | 'changePassword'
-  const [oldPass, setOldPass]       = useState('');
-  const [newPass, setNewPass]       = useState('');
-  const [confirmPass, setConfirmPass] = useState('');
-  const [showOld, setShowOld]       = useState(false);
-  const [showNew, setShowNew]       = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [changeMsg, setChangeMsg]   = useState({ text: '', type: '' });
+  const [mode, setMode]                 = useState('login'); // 'login' | 'changePassword'
+  const [oldPass, setOldPass]           = useState('');
+  const [newPass, setNewPass]           = useState('');
+  const [confirmPass, setConfirmPass]   = useState('');
+  const [showOld, setShowOld]           = useState(false);
+  const [showNew, setShowNew]           = useState(false);
+  const [showConfirm, setShowConfirm]   = useState(false);
+  const [changeMsg, setChangeMsg]       = useState({ text: '', type: '' });
+  const [isChanging, setIsChanging]     = useState(false);
+
+  // ── Sync with cloud on mount ─────────────────────────────────────────────
+  useEffect(() => {
+    // Proactively fetch latest master password from Firestore
+    getAppPassword().catch(() => {});
+    // Listen for real-time changes if Firestore is active
+    const unsub = subscribeToAppPassword(() => {});
+    return () => {
+      if (typeof unsub === 'function') unsub();
+    };
+  }, []);
 
   // ── Handlers ─────────────────────────────────────────────────────────────
   const triggerShake = () => {
@@ -30,44 +42,85 @@ export default function LoginPage({ onLogin }) {
     setTimeout(() => setShake(false), 600);
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (password === getStoredPassword()) {
-      setLoginError('');
-      onLogin();
-    } else {
-      setLoginError('Contraseña incorrecta. Inténtalo de nuevo.');
-      setPassword('');
+    if (isLoggingIn) return;
+    setLoginError('');
+
+    if (!password.trim()) {
+      setLoginError('Por favor ingresa tu contraseña.');
       triggerShake();
+      return;
+    }
+
+    setIsLoggingIn(true);
+    try {
+      const isValid = await verifyAppPassword(password);
+      if (isValid) {
+        setLoginError('');
+        onLogin();
+      } else {
+        setLoginError('Contraseña incorrecta. Inténtalo de nuevo.');
+        setPassword('');
+        triggerShake();
+      }
+    } catch (err) {
+      setLoginError('Error de verificación. Inténtalo de nuevo.');
+      triggerShake();
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
-  const handleChangePassword = (e) => {
+  const handleChangePassword = async (e) => {
     e.preventDefault();
+    if (isChanging) return;
     setChangeMsg({ text: '', type: '' });
 
-    if (oldPass !== getStoredPassword()) {
-      setChangeMsg({ text: 'La contraseña actual es incorrecta.', type: 'error' });
-      return;
-    }
-    if (newPass.length < 6) {
-      setChangeMsg({ text: 'La nueva contraseña debe tener al menos 6 caracteres.', type: 'error' });
-      return;
-    }
-    if (newPass !== confirmPass) {
-      setChangeMsg({ text: 'Las contraseñas nuevas no coinciden.', type: 'error' });
+    if (!oldPass) {
+      setChangeMsg({ text: 'Ingresa tu contraseña actual.', type: 'error' });
       return;
     }
 
-    localStorage.setItem(DEFAULT_PASSWORD_KEY, newPass);
-    setChangeMsg({ text: '✓ Contraseña actualizada correctamente.', type: 'success' });
-    setOldPass('');
-    setNewPass('');
-    setConfirmPass('');
-    setTimeout(() => {
-      setMode('login');
-      setChangeMsg({ text: '', type: '' });
-    }, 2000);
+    setIsChanging(true);
+    try {
+      const isOldCorrect = await verifyAppPassword(oldPass);
+      if (!isOldCorrect) {
+        setChangeMsg({ text: 'La contraseña actual es incorrecta.', type: 'error' });
+        setIsChanging(false);
+        return;
+      }
+      if (newPass.length < 6) {
+        setChangeMsg({ text: 'La nueva contraseña debe tener al menos 6 caracteres.', type: 'error' });
+        setIsChanging(false);
+        return;
+      }
+      if (newPass !== confirmPass) {
+        setChangeMsg({ text: 'Las contraseñas nuevas no coinciden.', type: 'error' });
+        setIsChanging(false);
+        return;
+      }
+
+      await saveAppPassword(newPass);
+      setChangeMsg({ 
+        text: '✓ Contraseña actualizada correctamente en todos tus dispositivos.', 
+        type: 'success' 
+      });
+      setOldPass('');
+      setNewPass('');
+      setConfirmPass('');
+      setTimeout(() => {
+        setMode('login');
+        setChangeMsg({ text: '', type: '' });
+      }, 2200);
+    } catch (err) {
+      setChangeMsg({ 
+        text: err.message || 'Error al guardar la contraseña.', 
+        type: 'error' 
+      });
+    } finally {
+      setIsChanging(false);
+    }
   };
 
   // ── EyeIcon helper ───────────────────────────────────────────────────────
@@ -108,7 +161,7 @@ export default function LoginPage({ onLogin }) {
         <p className="login-subtitle">
           {mode === 'login'
             ? 'Certificado de Salud · Historias y un Café'
-            : 'Ingresa tu contraseña actual y la nueva'}
+            : 'Se actualizará en tu Mac Mini, iPad, iPhone y demás dispositivos'}
         </p>
 
         {/* ── LOGIN FORM ── */}
@@ -129,12 +182,14 @@ export default function LoginPage({ onLogin }) {
                   placeholder="Ingresa tu contraseña"
                   autoFocus
                   autoComplete="current-password"
+                  disabled={isLoggingIn}
                 />
                 <button
                   type="button"
                   className="login-eye-btn"
                   onClick={() => setShowPass(v => !v)}
                   aria-label={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  disabled={isLoggingIn}
                 >
                   <EyeIcon visible={showPass} />
                 </button>
@@ -144,13 +199,31 @@ export default function LoginPage({ onLogin }) {
               )}
             </div>
 
-            <button type="submit" className="btn btn-primary login-btn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-                <polyline points="10 17 15 12 10 7"/>
-                <line x1="15" y1="12" x2="3" y2="12"/>
-              </svg>
-              Entrar
+            <button type="submit" className="btn btn-primary login-btn" disabled={isLoggingIn}>
+              {isLoggingIn ? (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="spin-icon">
+                    <line x1="12" y1="2" x2="12" y2="6"/>
+                    <line x1="12" y1="18" x2="12" y2="22"/>
+                    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/>
+                    <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+                    <line x1="2" y1="12" x2="6" y2="12"/>
+                    <line x1="18" y1="12" x2="22" y2="12"/>
+                    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/>
+                    <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
+                  </svg>
+                  Verificando...
+                </>
+              ) : (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                    <polyline points="10 17 15 12 10 7"/>
+                    <line x1="15" y1="12" x2="3" y2="12"/>
+                  </svg>
+                  Entrar
+                </>
+              )}
             </button>
 
             <button
@@ -161,6 +234,7 @@ export default function LoginPage({ onLogin }) {
                 setLoginError('');
                 setPassword('');
               }}
+              disabled={isLoggingIn}
             >
               ¿Cambiar contraseña?
             </button>
@@ -183,8 +257,9 @@ export default function LoginPage({ onLogin }) {
                   placeholder="Tu contraseña actual"
                   autoFocus
                   autoComplete="current-password"
+                  disabled={isChanging}
                 />
-                <button type="button" className="login-eye-btn" onClick={() => setShowOld(v => !v)} aria-label="Mostrar contraseña actual">
+                <button type="button" className="login-eye-btn" onClick={() => setShowOld(v => !v)} aria-label="Mostrar contraseña actual" disabled={isChanging}>
                   <EyeIcon visible={showOld} />
                 </button>
               </div>
@@ -202,8 +277,9 @@ export default function LoginPage({ onLogin }) {
                   onChange={(e) => { setNewPass(e.target.value); setChangeMsg({ text: '', type: '' }); }}
                   placeholder="Mínimo 6 caracteres"
                   autoComplete="new-password"
+                  disabled={isChanging}
                 />
-                <button type="button" className="login-eye-btn" onClick={() => setShowNew(v => !v)} aria-label="Mostrar nueva contraseña">
+                <button type="button" className="login-eye-btn" onClick={() => setShowNew(v => !v)} aria-label="Mostrar nueva contraseña" disabled={isChanging}>
                   <EyeIcon visible={showNew} />
                 </button>
               </div>
@@ -221,8 +297,9 @@ export default function LoginPage({ onLogin }) {
                   onChange={(e) => { setConfirmPass(e.target.value); setChangeMsg({ text: '', type: '' }); }}
                   placeholder="Repite la nueva contraseña"
                   autoComplete="new-password"
+                  disabled={isChanging}
                 />
-                <button type="button" className="login-eye-btn" onClick={() => setShowConfirm(v => !v)} aria-label="Mostrar confirmación">
+                <button type="button" className="login-eye-btn" onClick={() => setShowConfirm(v => !v)} aria-label="Mostrar confirmación" disabled={isChanging}>
                   <EyeIcon visible={showConfirm} />
                 </button>
               </div>
@@ -249,11 +326,12 @@ export default function LoginPage({ onLogin }) {
                   setConfirmPass('');
                   setChangeMsg({ text: '', type: '' });
                 }}
+                disabled={isChanging}
               >
                 Cancelar
               </button>
-              <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
-                Guardar
+              <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={isChanging}>
+                {isChanging ? 'Sincronizando...' : 'Guardar'}
               </button>
             </div>
           </form>

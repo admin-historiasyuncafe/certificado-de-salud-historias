@@ -14,11 +14,15 @@ import {
   Sun,
   Moon,
   Phone,
-  UserPlus
+  UserPlus,
+  KeyRound,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { saveCertificate, logNotification, getAllCertificates, deleteCertificate } from '../services/db';
 import { isFirebaseConfigured, getFirebaseConnectionError, setFirebaseConnectionError, getFirestoreDb } from '../services/firebase';
 import { collection, getDocs, query, limit } from 'firebase/firestore';
+import { verifyAppPassword, saveAppPassword } from '../services/auth';
 
 export default function Settings({ onDataReset, theme = 'dark', onToggleTheme }) {
   const [validity, setValidity] = useState('1year');
@@ -34,6 +38,16 @@ export default function Settings({ onDataReset, theme = 'dark', onToggleTheme })
   const [firebaseError, setFirebaseError] = useState(null);
   const [connectionTestStatus, setConnectionTestStatus] = useState(null); // null | 'testing' | 'ok' | 'error'
   const [connectionTestMsg, setConnectionTestMsg] = useState('');
+
+  // Password Management States
+  const [passCurrent, setPassCurrent] = useState('');
+  const [passNew, setPassNew] = useState('');
+  const [passConfirm, setPassConfirm] = useState('');
+  const [showCurrentPass, setShowCurrentPass] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
+  const [passStatus, setPassStatus] = useState({ text: '', type: '' });
+  const [isSavingPass, setIsSavingPass] = useState(false);
 
   useEffect(() => {
     setValidity(localStorage.getItem('default_validity') || '1year');
@@ -72,6 +86,53 @@ export default function Settings({ onDataReset, theme = 'dark', onToggleTheme })
     const storedErr = getFirebaseConnectionError();
     setFirebaseError(storedErr);
   }, []);
+
+  const handleUpdatePassword = async (e) => {
+    e.preventDefault();
+    if (isSavingPass) return;
+    setPassStatus({ text: '', type: '' });
+
+    if (!passCurrent) {
+      setPassStatus({ text: 'Por favor ingresa la contraseña actual.', type: 'error' });
+      return;
+    }
+
+    setIsSavingPass(true);
+    try {
+      const isOldValid = await verifyAppPassword(passCurrent);
+      if (!isOldValid) {
+        setPassStatus({ text: 'La contraseña actual es incorrecta.', type: 'error' });
+        setIsSavingPass(false);
+        return;
+      }
+      if (passNew.length < 6) {
+        setPassStatus({ text: 'La nueva contraseña debe tener al menos 6 caracteres.', type: 'error' });
+        setIsSavingPass(false);
+        return;
+      }
+      if (passNew !== passConfirm) {
+        setPassStatus({ text: 'Las nuevas contraseñas no coinciden.', type: 'error' });
+        setIsSavingPass(false);
+        return;
+      }
+
+      await saveAppPassword(passNew);
+      setPassStatus({ 
+        text: '✓ Contraseña actualizada correctamente. El cambio ya está activo en todos tus dispositivos (Mac Mini, iPad, iPhone).', 
+        type: 'success' 
+      });
+      setPassCurrent('');
+      setPassNew('');
+      setPassConfirm('');
+    } catch (err) {
+      setPassStatus({ 
+        text: err.message || 'Error al guardar la contraseña.', 
+        type: 'error' 
+      });
+    } finally {
+      setIsSavingPass(false);
+    }
+  };
 
   // Live connection test against Firestore
   const testFirestoreConnection = async () => {
@@ -442,6 +503,121 @@ export default function Settings({ onDataReset, theme = 'dark', onToggleTheme })
           <div style={{ marginTop: '1rem', fontSize: '0.82rem', color: 'hsl(var(--text-muted))', textAlign: 'center' }}>
             Tema activo: <strong style={{ color: 'hsl(var(--accent-cyan))' }}>{theme === 'dark' ? 'Oscuro (Dark Mode)' : 'Claro (Light Mode)'}</strong>
           </div>
+        </section>
+
+        {/* Seguridad y Contraseña Maestra */}
+        <section className="glass-card settings-card">
+          <div className="card-header-icon">
+            <KeyRound className="cyan-glow-icon" size={24} />
+            <h3>Seguridad y Contraseña de Acceso</h3>
+          </div>
+          <p className="settings-description">
+            Cambia la contraseña maestra de la aplicación. Al guardarla, se sincroniza en tiempo real en tu <strong>Mac Mini, iPad, iPhone</strong> y cualquier otro dispositivo.
+          </p>
+          <form onSubmit={handleUpdatePassword}>
+            <div className="form-group">
+              <label className="form-label" htmlFor="settings-current-pass">Contraseña Actual</label>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <input
+                  id="settings-current-pass"
+                  type={showCurrentPass ? 'text' : 'password'}
+                  className="form-input"
+                  style={{ paddingRight: '2.5rem' }}
+                  value={passCurrent}
+                  onChange={(e) => { setPassCurrent(e.target.value); setPassStatus({ text: '', type: '' }); }}
+                  placeholder="Tu contraseña actual"
+                  disabled={isSavingPass}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPass(!showCurrentPass)}
+                  style={{ position: 'absolute', right: '0.75rem', background: 'none', border: 'none', color: 'hsl(var(--text-muted))', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                  aria-label="Alternar visibilidad"
+                >
+                  {showCurrentPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="settings-new-pass">Nueva Contraseña</label>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <input
+                  id="settings-new-pass"
+                  type={showNewPass ? 'text' : 'password'}
+                  className="form-input"
+                  style={{ paddingRight: '2.5rem' }}
+                  value={passNew}
+                  onChange={(e) => { setPassNew(e.target.value); setPassStatus({ text: '', type: '' }); }}
+                  placeholder="Mínimo 6 caracteres"
+                  disabled={isSavingPass}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPass(!showNewPass)}
+                  style={{ position: 'absolute', right: '0.75rem', background: 'none', border: 'none', color: 'hsl(var(--text-muted))', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                  aria-label="Alternar visibilidad"
+                >
+                  {showNewPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="settings-confirm-pass">Confirmar Nueva Contraseña</label>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <input
+                  id="settings-confirm-pass"
+                  type={showConfirmPass ? 'text' : 'password'}
+                  className="form-input"
+                  style={{ paddingRight: '2.5rem' }}
+                  value={passConfirm}
+                  onChange={(e) => { setPassConfirm(e.target.value); setPassStatus({ text: '', type: '' }); }}
+                  placeholder="Repite la nueva contraseña"
+                  disabled={isSavingPass}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPass(!showConfirmPass)}
+                  style={{ position: 'absolute', right: '0.75rem', background: 'none', border: 'none', color: 'hsl(var(--text-muted))', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                  aria-label="Alternar visibilidad"
+                >
+                  {showConfirmPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            {passStatus.text && (
+              <div style={{
+                margin: '0.75rem 0', padding: '0.75rem', borderRadius: '8px',
+                backgroundColor: passStatus.type === 'success' ? 'hsl(var(--status-active) / 0.12)' : 'hsl(var(--status-expired) / 0.12)',
+                border: `1px solid ${passStatus.type === 'success' ? 'hsl(var(--status-active) / 0.3)' : 'hsl(var(--status-expired) / 0.3)'}`,
+                color: passStatus.type === 'success' ? 'hsl(var(--status-active))' : 'hsl(var(--status-expired))',
+                fontSize: '0.85rem'
+              }}>
+                {passStatus.text}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="btn btn-primary"
+              style={{ marginTop: '0.75rem', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+              disabled={isSavingPass}
+            >
+              {isSavingPass ? (
+                <>
+                  <RefreshCw size={16} className="spin-icon" />
+                  Sincronizando con todos los dispositivos...
+                </>
+              ) : (
+                <>
+                  <Save size={16} />
+                  Actualizar Contraseña en Todos los Dispositivos
+                </>
+              )}
+            </button>
+          </form>
         </section>
 
         {/* Sincronización con Firebase */}
