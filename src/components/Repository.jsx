@@ -722,7 +722,7 @@ export default function Repository({ refreshTrigger, onRecordDeleted }) {
           border: 1px solid hsl(var(--card-border));
           border-radius: 10px;
           padding: 0.75rem 1rem 0.75rem 2.75rem;
-          color: #fff;
+          color: hsl(var(--text-primary));
           font-family: var(--font-sans);
           font-size: 0.95rem;
           transition: var(--transition-smooth);
@@ -753,7 +753,7 @@ export default function Repository({ refreshTrigger, onRecordDeleted }) {
           border: 1px solid hsl(var(--card-border));
           border-radius: 10px;
           padding: 0.75rem 1rem 0.75rem 2.5rem;
-          color: #fff;
+          color: hsl(var(--text-primary));
           font-family: var(--font-sans);
           font-size: 0.95rem;
           cursor: pointer;
@@ -836,7 +836,7 @@ export default function Repository({ refreshTrigger, onRecordDeleted }) {
         .cert-emp-name {
           font-size: 1.15rem;
           font-weight: 700;
-          color: #fff;
+          color: hsl(var(--text-primary));
           line-height: 1.2;
         }
 
@@ -890,7 +890,7 @@ export default function Repository({ refreshTrigger, onRecordDeleted }) {
           transition: var(--transition-smooth);
         }
         .icon-btn:hover {
-          color: #fff;
+          color: hsl(var(--accent-cyan));
           border-color: hsl(var(--accent-cyan));
           background: hsl(var(--accent-cyan) / 0.1);
         }

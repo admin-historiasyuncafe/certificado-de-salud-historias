@@ -383,7 +383,7 @@ export default function EmployeesView({ refreshTrigger, onUploadMissingDoc }) {
           transition: var(--transition-smooth);
         }
         .icon-btn:hover {
-          color: #fff;
+          color: hsl(var(--accent-cyan));
           border-color: hsl(var(--accent-cyan));
           background: hsl(var(--accent-cyan) / 0.1);
         }
@@ -441,7 +441,8 @@ export default function EmployeesView({ refreshTrigger, onUploadMissingDoc }) {
           font-size: 0.8rem;
           text-transform: uppercase;
           letter-spacing: 0.05em;
-          color: hsl(var(--text-muted));
+          color: hsl(var(--text-secondary));
+          font-weight: 600;
         }
 
         .stat-trend {
@@ -486,7 +487,7 @@ export default function EmployeesView({ refreshTrigger, onUploadMissingDoc }) {
           border: 1px solid hsl(var(--card-border));
           border-radius: 8px;
           padding: 0.6rem 1rem 0.6rem 2.5rem;
-          color: #fff;
+          color: hsl(var(--text-primary));
           font-size: 0.9rem;
           outline: none;
           transition: var(--transition-smooth);
@@ -539,12 +540,14 @@ export default function EmployeesView({ refreshTrigger, onUploadMissingDoc }) {
 
         .emp-card-name {
           font-size: 1.05rem;
-          color: #fff;
+          font-weight: 700;
+          color: hsl(var(--text-primary));
         }
 
         .emp-card-dept {
           font-size: 0.8rem;
-          color: hsl(var(--text-muted));
+          color: hsl(var(--text-secondary));
+          font-weight: 500;
         }
 
         .emp-progress-section {
@@ -557,6 +560,7 @@ export default function EmployeesView({ refreshTrigger, onUploadMissingDoc }) {
           font-size: 0.8rem;
           margin-bottom: 0.35rem;
           color: hsl(var(--text-secondary));
+          font-weight: 600;
         }
 
         .progress-bar-bg {
@@ -578,8 +582,9 @@ export default function EmployeesView({ refreshTrigger, onUploadMissingDoc }) {
         }
 
         .percent-text {
-          font-size: 0.72rem;
-          color: hsl(var(--text-muted));
+          font-size: 0.75rem;
+          color: hsl(var(--text-secondary));
+          font-weight: 600;
           display: block;
           margin-top: 0.25rem;
         }
@@ -623,7 +628,8 @@ export default function EmployeesView({ refreshTrigger, onUploadMissingDoc }) {
 
         .detail-title {
           font-size: 1.35rem;
-          color: #fff;
+          font-weight: 700;
+          color: hsl(var(--text-primary));
         }
 
         .detail-subtitle {
@@ -702,7 +708,7 @@ export default function EmployeesView({ refreshTrigger, onUploadMissingDoc }) {
           display: block;
           font-size: 0.88rem;
           font-weight: 600;
-          color: #fff;
+          color: hsl(var(--text-primary));
         }
 
         .doc-meta-desc {
@@ -730,24 +736,26 @@ export default function EmployeesView({ refreshTrigger, onUploadMissingDoc }) {
           align-items: center;
           justify-content: center;
           text-align: center;
-          color: hsl(var(--text-muted));
+          color: hsl(var(--text-secondary));
           padding: 2rem;
         }
 
         .select-prompt h3 {
-          color: hsl(var(--text-secondary));
+          color: hsl(var(--text-primary));
+          font-weight: 700;
           margin-bottom: 0.5rem;
         }
 
         .select-prompt p {
           font-size: 0.85rem;
+          color: hsl(var(--text-secondary));
           max-width: 320px;
         }
 
         .no-data-card {
           padding: 3rem 2rem;
           text-align: center;
-          color: hsl(var(--text-muted));
+          color: hsl(var(--text-secondary));
         }
 
         .no-data-icon {
@@ -756,12 +764,14 @@ export default function EmployeesView({ refreshTrigger, onUploadMissingDoc }) {
         }
 
         .no-data-card h4 {
-          color: hsl(var(--text-secondary));
+          color: hsl(var(--text-primary));
+          font-weight: 700;
           margin-bottom: 0.5rem;
         }
 
         .no-data-card p {
           font-size: 0.88rem;
+          color: hsl(var(--text-secondary));
           max-width: 340px;
           margin: 0 auto;
         }
@@ -800,7 +810,7 @@ export default function EmployeesView({ refreshTrigger, onUploadMissingDoc }) {
         }
         .close-detail-btn:hover {
           background: hsl(var(--card-border) / 0.4);
-          color: #fff;
+          color: hsl(var(--text-primary));
         }
 
         @media (max-width: 900px) {

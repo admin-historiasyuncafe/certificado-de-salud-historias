@@ -717,7 +717,7 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
         .stat-label {
           font-size: 0.8rem;
           color: hsl(var(--text-secondary));
-          font-weight: 500;
+          font-weight: 600;
           text-transform: uppercase;
           letter-spacing: 0.02em;
         }
@@ -725,7 +725,7 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
         .stat-value {
           font-size: 1.6rem;
           font-weight: 800;
-          color: #fff;
+          color: hsl(var(--text-primary));
           font-family: var(--font-display);
         }
 
@@ -752,7 +752,8 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
 
         .compliance-panel h3 {
           font-size: 1.15rem;
-          color: #fff;
+          font-weight: 700;
+          color: hsl(var(--text-primary));
           width: 100%;
           text-align: left;
         }
@@ -796,13 +797,14 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
           font-size: 2rem;
           font-weight: 800;
           font-family: var(--font-display);
-          color: #fff;
+          color: hsl(var(--text-primary));
           line-height: 1;
         }
 
         .gauge-label {
-          font-size: 0.75rem;
+          font-size: 0.8rem;
           color: hsl(var(--text-secondary));
+          font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.05em;
           margin-top: 0.2rem;
@@ -827,7 +829,8 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
         
         .panel-header h3 {
           font-size: 1.15rem;
-          color: #fff;
+          font-weight: 700;
+          color: hsl(var(--text-primary));
         }
 
         .view-all-link {
@@ -843,7 +846,7 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
           transition: var(--transition-smooth);
         }
         .view-all-link:hover {
-          color: #fff;
+          color: hsl(var(--accent-cyan-dim));
           transform: translateY(-1px);
         }
 
@@ -899,8 +902,8 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
         .border-left-expiring { border-left: 3px solid hsl(var(--status-warning)); }
 
         .urgent-name {
-          font-weight: 600;
-          color: #fff;
+          font-weight: 700;
+          color: hsl(var(--text-primary));
           font-size: 0.95rem;
         }
 
@@ -924,7 +927,8 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
 
         .footer-subpanel h3 {
           font-size: 1.05rem;
-          color: #fff;
+          font-weight: 700;
+          color: hsl(var(--text-primary));
         }
 
         .footer-subpanel-desc {
@@ -973,7 +977,8 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
           display: flex;
           align-items: center;
           gap: 0.35rem;
-          color: #fff;
+          color: hsl(var(--text-primary));
+          font-weight: 600;
         }
         
         .recent-log-bell {
@@ -982,10 +987,12 @@ export default function Dashboard({ refreshTrigger, onViewChange }) {
 
         .recent-log-type {
           color: hsl(var(--text-secondary));
+          font-weight: 500;
         }
 
         .recent-log-date {
-          color: hsl(var(--text-muted));
+          color: hsl(var(--text-secondary));
+          font-weight: 500;
           text-align: right;
         }
 

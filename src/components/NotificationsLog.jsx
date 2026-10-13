@@ -414,12 +414,12 @@ export default function NotificationsLog({ refreshTrigger }) {
 
         .audit-table tbody tr:hover td {
           background-color: hsl(var(--card-border) / 0.15);
-          color: #fff;
+          color: hsl(var(--text-primary));
         }
 
         .emp-name-cell {
-          font-weight: 600;
-          color: #fff;
+          font-weight: 700;
+          color: hsl(var(--text-primary));
         }
 
         .notif-type-cell {

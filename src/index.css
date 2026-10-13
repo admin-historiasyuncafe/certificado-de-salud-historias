@@ -43,9 +43,9 @@
   --card-bg: 0 0% 100% / 0.94;
   --card-border: 220 15% 78% / 0.9;
   
-  --text-primary: 220 30% 10%;      /* Casi negro — máximo contraste */
-  --text-secondary: 220 20% 22%;    /* Carbón oscuro legible */
-  --text-muted: 220 15% 35%;        /* Gris oscuro — contraste AA contra blanco */
+  --text-primary: 220 35% 8%;       /* Casi negro puro — máximo contraste */
+  --text-secondary: 220 25% 18%;    /* Carbón oscuro profundo */
+  --text-muted: 220 18% 28%;        /* Gris oscuro sólido — excelente legibilidad */
   
   --accent-cyan: 182 95% 22%;       /* Teal profundo con excelente contraste */
   --accent-cyan-glow: 182 95% 22% / 0.12;
@@ -61,6 +61,12 @@
   --status-expired-glow: 354 75% 38% / 0.12;
 
   --shadow-glow: 0 8px 30px 0 rgba(15, 23, 42, 0.10);
+}
+
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder {
+  color: hsl(var(--text-muted));
+  opacity: 0.85;
 }
 
 [data-theme="light"] .cert-dialog-modal::backdrop {

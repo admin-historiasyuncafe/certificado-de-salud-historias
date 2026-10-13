@@ -589,7 +589,7 @@ export default function CalendarView({ refreshTrigger, onRecordDeleted }) {
           font-family: var(--font-display);
           font-size: 1.25rem;
           font-weight: 700;
-          color: #fff;
+          color: hsl(var(--text-primary));
           min-width: 160px;
           text-align: center;
         }
