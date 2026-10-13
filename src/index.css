@@ -38,29 +38,29 @@
 [data-theme="light"] {
   --bg-primary: 220 20% 96%;        /* Fondo suave y limpio */
   --bg-secondary: 0 0% 100%;        /* Blanco para sidebar y tarjetas */
-  --bg-tertiary: 220 18% 92%;       /* Gris suave para inputs y fondos neutros */
+  --bg-tertiary: 220 18% 91%;       /* Gris suave para inputs y fondos neutros */
   
   --card-bg: 0 0% 100% / 0.94;
-  --card-border: 220 15% 85% / 0.85;
+  --card-border: 220 15% 78% / 0.9;
   
-  --text-primary: 220 25% 14%;      /* Carbón oscuro nítido */
-  --text-secondary: 220 14% 38%;    /* Gris carbón medio */
-  --text-muted: 220 10% 55%;        /* Gris suave */
+  --text-primary: 220 30% 10%;      /* Casi negro — máximo contraste */
+  --text-secondary: 220 20% 22%;    /* Carbón oscuro legible */
+  --text-muted: 220 15% 35%;        /* Gris oscuro — contraste AA contra blanco */
   
-  --accent-cyan: 182 95% 24%;       /* Teal profundo con excelente contraste */
-  --accent-cyan-glow: 182 95% 24% / 0.12;
-  --accent-cyan-dim: 182 95% 18%;
+  --accent-cyan: 182 95% 22%;       /* Teal profundo con excelente contraste */
+  --accent-cyan-glow: 182 95% 22% / 0.12;
+  --accent-cyan-dim: 182 95% 16%;
   
-  --status-active: 168 55% 30%;     /* Verde esmeralda rico */
-  --status-active-glow: 168 55% 30% / 0.12;
+  --status-active: 168 60% 26%;     /* Verde esmeralda oscuro */
+  --status-active-glow: 168 60% 26% / 0.12;
   
-  --status-warning: 34 85% 34%;     /* Ámbar / Café dorado */
-  --status-warning-glow: 34 85% 34% / 0.12;
+  --status-warning: 34 90% 28%;     /* Ámbar oscuro legible */
+  --status-warning-glow: 34 90% 28% / 0.12;
   
-  --status-expired: 354 75% 44%;    /* Carmín legible */
-  --status-expired-glow: 354 75% 44% / 0.12;
+  --status-expired: 354 75% 38%;    /* Carmín oscuro legible */
+  --status-expired-glow: 354 75% 38% / 0.12;
 
-  --shadow-glow: 0 8px 30px 0 rgba(15, 23, 42, 0.08);
+  --shadow-glow: 0 8px 30px 0 rgba(15, 23, 42, 0.10);
 }
 
 [data-theme="light"] .cert-dialog-modal::backdrop {
