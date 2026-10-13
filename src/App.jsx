@@ -8,9 +8,20 @@ import NotificationsLog from './components/NotificationsLog';
 import Settings from './components/Settings';
 import EmployeesView from './components/EmployeesView';
 import NewEmployeeView from './components/NewEmployeeView';
+import LoginPage from './components/LoginPage';
 import { getAllCertificates, logNotification, getNotificationLogs } from './services/db';
 
 export default function App() {
+  // Auth: persisted in sessionStorage so closing the tab requires re-login
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return sessionStorage.getItem('docu_auth') === 'true';
+  });
+
+  const handleLogin = () => {
+    sessionStorage.setItem('docu_auth', 'true');
+    setIsAuthenticated(true);
+  };
+
   const [currentView, setCurrentView] = useState('dashboard');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [intakePreload, setIntakePreload] = useState(null);
@@ -212,6 +223,10 @@ export default function App() {
         );
     }
   };
+
+  if (!isAuthenticated) {
+    return <LoginPage onLogin={handleLogin} />;
+  }
 
   return (
     <div className="app-container">
