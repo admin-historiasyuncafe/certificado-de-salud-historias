@@ -337,7 +337,7 @@ Error generating stack: `+e.message+`
         .stat-label {
           font-size: 0.8rem;
           color: hsl(var(--text-secondary));
-          font-weight: 500;
+          font-weight: 600;
           text-transform: uppercase;
           letter-spacing: 0.02em;
         }
@@ -345,7 +345,7 @@ Error generating stack: `+e.message+`
         .stat-value {
           font-size: 1.6rem;
           font-weight: 800;
-          color: #fff;
+          color: hsl(var(--text-primary));
           font-family: var(--font-display);
         }
 
@@ -372,7 +372,8 @@ Error generating stack: `+e.message+`
 
         .compliance-panel h3 {
           font-size: 1.15rem;
-          color: #fff;
+          font-weight: 700;
+          color: hsl(var(--text-primary));
           width: 100%;
           text-align: left;
         }
@@ -416,13 +417,14 @@ Error generating stack: `+e.message+`
           font-size: 2rem;
           font-weight: 800;
           font-family: var(--font-display);
-          color: #fff;
+          color: hsl(var(--text-primary));
           line-height: 1;
         }
 
         .gauge-label {
-          font-size: 0.75rem;
+          font-size: 0.8rem;
           color: hsl(var(--text-secondary));
+          font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.05em;
           margin-top: 0.2rem;
@@ -447,7 +449,8 @@ Error generating stack: `+e.message+`
         
         .panel-header h3 {
           font-size: 1.15rem;
-          color: #fff;
+          font-weight: 700;
+          color: hsl(var(--text-primary));
         }
 
         .view-all-link {
@@ -463,7 +466,7 @@ Error generating stack: `+e.message+`
           transition: var(--transition-smooth);
         }
         .view-all-link:hover {
-          color: #fff;
+          color: hsl(var(--accent-cyan-dim));
           transform: translateY(-1px);
         }
 
@@ -519,8 +522,8 @@ Error generating stack: `+e.message+`
         .border-left-expiring { border-left: 3px solid hsl(var(--status-warning)); }
 
         .urgent-name {
-          font-weight: 600;
-          color: #fff;
+          font-weight: 700;
+          color: hsl(var(--text-primary));
           font-size: 0.95rem;
         }
 
@@ -544,7 +547,8 @@ Error generating stack: `+e.message+`
 
         .footer-subpanel h3 {
           font-size: 1.05rem;
-          color: #fff;
+          font-weight: 700;
+          color: hsl(var(--text-primary));
         }
 
         .footer-subpanel-desc {
@@ -593,7 +597,8 @@ Error generating stack: `+e.message+`
           display: flex;
           align-items: center;
           gap: 0.35rem;
-          color: #fff;
+          color: hsl(var(--text-primary));
+          font-weight: 600;
         }
         
         .recent-log-bell {
@@ -602,10 +607,12 @@ Error generating stack: `+e.message+`
 
         .recent-log-type {
           color: hsl(var(--text-secondary));
+          font-weight: 500;
         }
 
         .recent-log-date {
-          color: hsl(var(--text-muted));
+          color: hsl(var(--text-secondary));
+          font-weight: 500;
           text-align: right;
         }
 
@@ -966,7 +973,7 @@ Error generating stack: `+e.message+`
           border: 1px solid hsl(var(--card-border));
           border-radius: 10px;
           padding: 0.75rem 1rem 0.75rem 2.75rem;
-          color: #fff;
+          color: hsl(var(--text-primary));
           font-family: var(--font-sans);
           font-size: 0.95rem;
           transition: var(--transition-smooth);
@@ -997,7 +1004,7 @@ Error generating stack: `+e.message+`
           border: 1px solid hsl(var(--card-border));
           border-radius: 10px;
           padding: 0.75rem 1rem 0.75rem 2.5rem;
-          color: #fff;
+          color: hsl(var(--text-primary));
           font-family: var(--font-sans);
           font-size: 0.95rem;
           cursor: pointer;
@@ -1080,7 +1087,7 @@ Error generating stack: `+e.message+`
         .cert-emp-name {
           font-size: 1.15rem;
           font-weight: 700;
-          color: #fff;
+          color: hsl(var(--text-primary));
           line-height: 1.2;
         }
 
@@ -1134,7 +1141,7 @@ Error generating stack: `+e.message+`
           transition: var(--transition-smooth);
         }
         .icon-btn:hover {
-          color: #fff;
+          color: hsl(var(--accent-cyan));
           border-color: hsl(var(--accent-cyan));
           background: hsl(var(--accent-cyan) / 0.1);
         }
@@ -1187,7 +1194,7 @@ Error generating stack: `+e.message+`
           font-family: var(--font-display);
           font-size: 1.25rem;
           font-weight: 700;
-          color: #fff;
+          color: hsl(var(--text-primary));
           min-width: 160px;
           text-align: center;
         }
@@ -1398,12 +1405,12 @@ Error generating stack: `+e.message+`
 
         .audit-table tbody tr:hover td {
           background-color: hsl(var(--card-border) / 0.15);
-          color: #fff;
+          color: hsl(var(--text-primary));
         }
 
         .emp-name-cell {
-          font-weight: 600;
-          color: #fff;
+          font-weight: 700;
+          color: hsl(var(--text-primary));
         }
 
         .notif-type-cell {
@@ -1623,7 +1630,7 @@ Error generating stack: `+e.message+`
           transition: var(--transition-smooth);
         }
         .icon-btn:hover {
-          color: #fff;
+          color: hsl(var(--accent-cyan));
           border-color: hsl(var(--accent-cyan));
           background: hsl(var(--accent-cyan) / 0.1);
         }
@@ -1681,7 +1688,8 @@ Error generating stack: `+e.message+`
           font-size: 0.8rem;
           text-transform: uppercase;
           letter-spacing: 0.05em;
-          color: hsl(var(--text-muted));
+          color: hsl(var(--text-secondary));
+          font-weight: 600;
         }
 
         .stat-trend {
@@ -1726,7 +1734,7 @@ Error generating stack: `+e.message+`
           border: 1px solid hsl(var(--card-border));
           border-radius: 8px;
           padding: 0.6rem 1rem 0.6rem 2.5rem;
-          color: #fff;
+          color: hsl(var(--text-primary));
           font-size: 0.9rem;
           outline: none;
           transition: var(--transition-smooth);
@@ -1779,12 +1787,14 @@ Error generating stack: `+e.message+`
 
         .emp-card-name {
           font-size: 1.05rem;
-          color: #fff;
+          font-weight: 700;
+          color: hsl(var(--text-primary));
         }
 
         .emp-card-dept {
           font-size: 0.8rem;
-          color: hsl(var(--text-muted));
+          color: hsl(var(--text-secondary));
+          font-weight: 500;
         }
 
         .emp-progress-section {
@@ -1797,6 +1807,7 @@ Error generating stack: `+e.message+`
           font-size: 0.8rem;
           margin-bottom: 0.35rem;
           color: hsl(var(--text-secondary));
+          font-weight: 600;
         }
 
         .progress-bar-bg {
@@ -1818,8 +1829,9 @@ Error generating stack: `+e.message+`
         }
 
         .percent-text {
-          font-size: 0.72rem;
-          color: hsl(var(--text-muted));
+          font-size: 0.75rem;
+          color: hsl(var(--text-secondary));
+          font-weight: 600;
           display: block;
           margin-top: 0.25rem;
         }
@@ -1863,7 +1875,8 @@ Error generating stack: `+e.message+`
 
         .detail-title {
           font-size: 1.35rem;
-          color: #fff;
+          font-weight: 700;
+          color: hsl(var(--text-primary));
         }
 
         .detail-subtitle {
@@ -1942,7 +1955,7 @@ Error generating stack: `+e.message+`
           display: block;
           font-size: 0.88rem;
           font-weight: 600;
-          color: #fff;
+          color: hsl(var(--text-primary));
         }
 
         .doc-meta-desc {
@@ -1970,24 +1983,26 @@ Error generating stack: `+e.message+`
           align-items: center;
           justify-content: center;
           text-align: center;
-          color: hsl(var(--text-muted));
+          color: hsl(var(--text-secondary));
           padding: 2rem;
         }
 
         .select-prompt h3 {
-          color: hsl(var(--text-secondary));
+          color: hsl(var(--text-primary));
+          font-weight: 700;
           margin-bottom: 0.5rem;
         }
 
         .select-prompt p {
           font-size: 0.85rem;
+          color: hsl(var(--text-secondary));
           max-width: 320px;
         }
 
         .no-data-card {
           padding: 3rem 2rem;
           text-align: center;
-          color: hsl(var(--text-muted));
+          color: hsl(var(--text-secondary));
         }
 
         .no-data-icon {
@@ -1996,12 +2011,14 @@ Error generating stack: `+e.message+`
         }
 
         .no-data-card h4 {
-          color: hsl(var(--text-secondary));
+          color: hsl(var(--text-primary));
+          font-weight: 700;
           margin-bottom: 0.5rem;
         }
 
         .no-data-card p {
           font-size: 0.88rem;
+          color: hsl(var(--text-secondary));
           max-width: 340px;
           margin: 0 auto;
         }
@@ -2040,7 +2057,7 @@ Error generating stack: `+e.message+`
         }
         .close-detail-btn:hover {
           background: hsl(var(--card-border) / 0.4);
-          color: #fff;
+          color: hsl(var(--text-primary));
         }
 
         @media (max-width: 900px) {
